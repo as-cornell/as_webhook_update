@@ -1,5 +1,5 @@
 [![Latest Stable Version](https://poser.pugx.org/as-cornell/as_webhook_update/v)](https://packagist.org/packages/as-cornell/as_webhook_update)
-# AS PEOPLE LDAP (as_webhook_update)
+# AS WEBHOOK UPDATE (as_webhook_update)
 
 ## INTRODUCTION
 
