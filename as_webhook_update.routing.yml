@@ -1,0 +1,7 @@
+as_webhook_update.settings:
+  path: '/admin/config/as_webhook_update/settings'
+  defaults:
+    _form: '\Drupal\as_webhook_update\Form\WebhookSettingsForm'
+    _title: 'Webhook Update configuration'
+  requirements:
+    _permission: 'administer site configuration'

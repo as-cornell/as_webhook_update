@@ -1,0 +1,17 @@
+{
+    "name": "as-cornell/as_webhook_update",
+    "description": "Provides a webhook notification service tied into hook_post_action, used to generate remote nodes and terms.",
+    "type": "drupal-custom-module",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://communications.as.cornell.edu",
+    "authors": [
+        {
+            "name": "Mark Wilson",
+            "email": "mew72@cornell.edu",
+            "role": "Author"
+        }
+    ],
+    "support": {},
+    "minimum-stability": "dev",
+    "require": {}
+}

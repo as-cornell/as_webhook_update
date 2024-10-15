@@ -1,0 +1,6 @@
+as_webhook_update.settings:
+ title: 'AS Webhook Update Settings'
+ description: 'Settings for AS Webhook Update integration'
+ parent: system.admin_config_services
+ route_name: as_webhook_update.settings
+ weight: 101

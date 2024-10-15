@@ -1,0 +1,844 @@
+<?php
+
+/**
+ * @file
+ * Adapted from hook_post_action_test to leverage hook_post_action module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Path\AliasManager;
+
+/**
+ * Implements hook_ENTITY_TYPE_postinsert().
+ */
+function as_webhook_update_node_postinsert(EntityInterface $entity) {
+//variables
+  $node_types = array('article', 'person'); // only these node types
+  //$people_hosts = array('artsci-people.lndo.site','test-artsci-people.pantheonsite.io', 'people.as.cornell.edu'); // only these domains
+  $event = 'create'; // action to perform
+  $bundle = $entity->bundle();
+
+  
+
+  if (in_array($bundle, $node_types)) {
+    $domain_schema = as_webhook_update_getdomainschema();
+
+    // build data from fields specific to article
+    if ($bundle == 'article') {
+      $data = as_webhook_update_getarticledata($entity,$event);
+      //$mediareportdata = as_webhook_update_getmediareportentrydata($entity,$event);
+      // curl request to as webhook listener
+      if(!empty($data)){
+        $curl = as_webhook_update_getcurl($data,$domain_schema['articlesurl']);
+        // log transaction
+        \Drupal::logger('as_webhook_update')
+          ->info("The created {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, curl {$curl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+      }
+      // curl request to mediareport webhook listener to insert media report entries
+      // disabled until feeds is switched off to avoid duplicates
+      //if(!empty($mediareportdata)){
+        //$mediareportcurl = as_webhook_update_getcurl($mediareportdata,$mediareporturl);
+        // log transaction
+        //\Drupal::logger('as_webhook_update')
+          //->info("The created {$bundle} from " . __FUNCTION__ ." is nid {$id}, curl {$mediareportcurl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+      //}
+    }
+    
+   // build data from fields specific to person, only on people
+    //if (in_array($host, $people_hosts)) {
+    if ($domain_schema['schema'] == 'people') {
+      if ($bundle == 'person') {
+        $data = as_webhook_update_getpersondata($entity,$event);
+        // curl request to webhook listener for as and 
+        if(!empty($data)){
+          // logic for only sending faculty, college staff and include as people to as
+          $persontype =  json_decode($data)->field_person_type;
+          if (json_decode($data)->field_as_directory){
+            $as_directory = TRUE;
+          }else{
+            $as_directory = FALSE;
+          }
+          if ($persontype == 'Faculty'  || $persontype == 'College Staff' || $persontype =='Advisory Council' || ($persontype =='Other Faculty' && $as_directory == TRUE)) {
+              $ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
+              // also do mediareport people
+              $mediareportdata = as_webhook_update_getmediareportpersondata($entity,$event);
+              $mediareportcurl = as_webhook_update_getcurl($mediareportdata,$domain_schema['mediareporturl']);
+          // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The created {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, ascurl {$ascurl} mediareportcurl {$mediareportcurl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+            }
+          if ($persontype == 'Faculty' || $persontype =='Other Faculty' || $persontype == 'Department Staff' || $persontype =='Graduate Student') {
+          $deptcurl = as_webhook_update_getcurl($data,$domain_schema['deptpeopleurl']);
+          // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The created {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, deptcurl {$deptcurl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+            }
+          }
+        }
+      }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_postupdate().
+ */
+function as_webhook_update_node_postupdate(EntityInterface $entity) {
+  //variables
+  $node_types = array('article', 'person'); // only these node types
+  //$people_hosts = array('artsci-people.lndo.site','test-artsci-people.pantheonsite.io', 'people.as.cornell.edu'); // only these domains
+  $event = 'update'; // action to perform
+  $bundle = $entity->bundle(); 
+
+  if (in_array($bundle, $node_types)) {
+    $domain_schema = as_webhook_update_getdomainschema();
+
+    // build data from fields specific to article
+    if ($bundle == 'article') {
+      $data = as_webhook_update_getarticledata($entity,$event);
+      //$mediareportdata = as_webhook_update_getmediareportentrydata($entity,$event);
+      // curl request to webhook listener
+      if(!empty($data)){
+        $curl = as_webhook_update_getcurl($data,$domain_schema['articlesurl']);
+        // log transaction
+        \Drupal::logger('as_webhook_update')
+          ->info("The updated {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, curl {$curl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+        }
+      // curl request to mediareport webhook listener
+      // we don't want to update media report entries unless we're sure to preserve tagging
+      //if(!empty($mediareportdata)){
+        //$mediareportcurl = as_webhook_update_getcurl($mediareportdata,$domain_schema['mediareporturl']);
+        // log transaction
+        //\Drupal::logger('as_webhook_update')
+          //->info("The created {$bundle} from " . __FUNCTION__ ." is nid {$id}, curl {$mediareportcurl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+      //}
+      }
+    
+    // build data from fields specific to person, only on people
+    //if (in_array($host, $people_hosts)) {
+    if ($domain_schema['schema'] == 'people') {
+      if ($bundle == 'person') {
+        $data = as_webhook_update_getpersondata($entity,$event);
+        // curl requests
+        if(!empty($data)){
+          // logic for only sending faculty, college staff and include as people to as
+          $persontype =  json_decode($data)->field_person_type;
+          if (json_decode($data)->field_as_directory){
+            $as_directory = TRUE;
+          }else{
+            $as_directory = FALSE;
+          }
+          if ($persontype == 'Faculty'  || $persontype == 'College Staff' || $persontype =='Advisory Council' || ($persontype =='Other Faculty' && $as_directory == TRUE)) {
+              $ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
+              // do media report people too
+              $mediareportdata = as_webhook_update_getmediareportpersondata($entity,$event);
+              $mediareportcurl = as_webhook_update_getcurl($mediareportdata,$domain_schema['mediareporturl']);
+          // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The updated {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, curl {$ascurl} {$mediareportcurl}<br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+            }
+          if ($persontype == 'Faculty' || $persontype =='Other Faculty' || $persontype == 'Department Staff' || $persontype =='Graduate Student') {
+          $deptcurl = as_webhook_update_getcurl($data,$domain_schema['deptpeopleurl']);
+          // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The updated {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, curl {$deptcurl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+            }
+          }
+        }
+      }
+      
+    }
+}
+
+
+/**
+ * Implements hook_ENTITY_TYPE_postinsert().
+ */
+function as_webhook_update_taxonomy_term_postinsert(EntityInterface $entity) {
+//variables
+  $vocabularies = array('academic_interests', 'academic_role', 'research_areas'); // only these bundles
+  $event = 'create'; // action to perform
+  $bundle = $entity->bundle();
+  if (in_array($bundle, $vocabularies)) {
+    $domain_schema = as_webhook_update_getdomainschema();
+    $data = array(
+        
+        'event'=>$event,
+        'type'=>'term',
+        'vocabulary' => $bundle,
+        'uuid'=>$entity->tid->value,
+        'status'=>$entity->status->value,
+        'title'=>$entity->name->value,
+        'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
+        'field_people_tid'=>$entity->tid->value,
+        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
+      );
+  $data = json_encode($data, JSON_UNESCAPED_SLASHES);
+
+  $deptcurl = as_webhook_update_getcurl($domain_schema['deptpeopleurl']);
+  //$ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
+    // log transaction
+    \Drupal::logger('as_webhook_update')
+    ->info("The created {$bundle} taxonomy term from " . __FUNCTION__ ." is {$entity->name->value}, field_people_tid {$entity->tid->value} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+}
+
+
+/**
+ * Implements hook_ENTITY_TYPE_postupdate().
+ */
+function as_webhook_update_taxonomy_term_postupdate(EntityInterface $entity) {
+  $vocabularies = array('academic_interests', 'academic_role', 'research_areas'); // only these bundles
+  $bundle = $entity->bundle();
+  $event = 'update'; // action to perform
+  if (in_array($bundle, $vocabularies)) {
+    $domain_schema = as_webhook_update_getdomainschema();
+    $data = array(
+          
+          'event'=>$event,
+          'type'=>'term',
+          'vocabulary' => $bundle,
+          'uuid'=>$entity->tid->value,
+          'status'=>$entity->status->value,
+          'title'=>$entity->name->value,
+          'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
+          'field_people_tid'=>$entity->tid->value,
+          'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
+        );
+    $data = json_encode($data, JSON_UNESCAPED_SLASHES);
+
+        $deptcurl = as_webhook_update_getcurl($data,$domain_schema['deptpeopleurl']);
+        //$ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
+        // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The updated {$bundle} taxonomy term from " . __FUNCTION__ ." is {$entity->name->value}, tid {$entity->tid->value} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_postdelete().
+ */
+function as_webhook_update_node_postdelete(EntityInterface $entity) {
+  $id = $entity->id();
+  $bundle = $entity->bundle();
+  //only people nodes
+  $node_types = array('person');
+  $event = 'delete'; // action to perform
+  $uuid =  $entity->uuid->value;
+  $host = \Drupal::request()->getHost();
+  $domain_schema = as_webhook_update_getdomainschema();
+  if (in_array($bundle, $node_types)) {
+
+    // only send delete request from people
+    //if (in_array($host, $people_hosts)) {
+    if ($domain_schema['schema'] == 'people') {
+        $data = as_webhook_update_getpersondata($entity,$event);
+        // curl requests
+        if(!empty($data)){
+          // logic for only sending faculty, college staff and include as people to as
+          $persontype =  json_decode($data)->field_person_type;
+          if (json_decode($data)->field_as_directory){
+            $as_directory = TRUE;
+          }else{
+            $as_directory = FALSE;
+          }
+          if ($persontype == 'Faculty'  || $persontype == 'College Staff' || $persontype =='Advisory Council' || ($persontype =='Other Faculty' && $as_directory == TRUE)) {
+              $ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
+              //also do mediareport person record
+              $mediareportdata = as_webhook_update_getmediareportpersondata($entity,$event);
+              $mediareportcurl = as_webhook_update_getcurl($mediareportdata,$domain_schema['mediareporturl']);
+          // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The deleted {$bundle} from " . __FUNCTION__ ." is nid {$id}, curl {$ascurl} {$mediareportcurl}<br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+            }
+          if ($persontype == 'Faculty' || $persontype =='Other Faculty' || $persontype == 'Department Staff' || $persontype =='Graduate Student') {
+              $deptcurl = as_webhook_update_getcurl($data,$domain_schema['deptpeopleurl']);
+          // log transaction
+          \Drupal::logger('as_webhook_update')
+            ->info("The deleted {$bundle} from " . __FUNCTION__ ." is nid {$id}, curl {$deptcurl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+            }
+          }
+        }
+      }
+      
+    
+}
+
+
+/**
+ * Implements as_webhook_update_getarticledata().
+ */
+// build data from fields specific to article
+function as_webhook_update_getarticledata($entity,$event){
+    $data = '';
+    //$uuid = $entity->uuid->value;
+    //$title = $entity->title->value;
+    if (!empty($entity->field_summary->value)){
+      $summary = $entity->field_summary->value;
+    }else{
+      $summary = $title;
+    }
+    // images
+    foreach ($entity->field_image as $pireference) {
+      //$portrait_image_path = ltrim($pireference->entity->field_media_image->entity->getFileUri(), 'public://');
+      $portrait_image_path = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
+      $portrait_image_path = 'https://as.cornell.edu/sites/default/files/styles/4_5/'.$portrait_image_path;
+      $portrait_image_alt = $pireference->entity->field_media_image->alt;
+      }
+    if (!empty($entity->field_newsletter_image)){
+      foreach ($entity->field_newsletter_image as $lireference) {
+        //$landscape_image_path = ltrim($lireference->entity->field_media_image->entity->getFileUri(), 'public://');
+        $landscape_image_path = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity->getFileUri());
+        $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/'.$landscape_image_path;
+        $landscape_image_alt = $lireference->entity->field_media_image->alt;
+        }
+    }
+    if (!empty($entity->field_thumbnail_image)){
+      foreach ($entity->field_thumbnail_image as $tireference) {
+        //$thumbnail_image_path = ltrim($tireference->entity->field_media_image->entity->getFileUri(), 'public://');
+        $thumbnail_image_path = str_replace('public://', 'public/', $tireference->entity->field_media_image->entity->getFileUri());
+        $thumbnail_image_path = 'https://as.cornell.edu/sites/default/files/styles/1_1_thumbnail/'.$thumbnail_image_path ;
+        $thumbnail_image_alt = $tireference->entity->field_media_image->alt;
+        }
+    }
+    $body = '';
+    foreach ($entity->field_article_components_entity as $acreference) {
+      if ($acreference->entity->bundle() == 'formatted_text_block') {
+        $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://as.cornell.edu/sites/default/files/styles/', preg_replace('/\s\s+/', '',$acreference->entity->field_formatted_text->processed)));
+        }
+      if ($acreference->entity->bundle() == 'figure_wrapper') {
+        if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_image') {
+          $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
+           if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption)) {
+              $body = $body . ' <span class="caption">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption->value .'</span>';
+            }
+            if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit)) {
+              $body = $body . ' <span class="credit">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit->value .'</span>';
+            } 
+          $body = $body . '</figcaption> </figure>';
+          }
+        
+        if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_video') {
+          $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
+          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_embed_code->value));
+          $body = $body . '</div><figcaption>';
+          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_caption->value));
+          $body = $body . '</figcaption></figure>';
+          }
+        }
+      
+
+      if ($acreference->entity->bundle() == 'figure_video') {
+        $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
+        $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_embed_code->value));
+        $body = $body . '</div><figcaption>';
+        $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_caption->value));
+        $body = $body . '</figcaption></figure>';
+        }
+      }
+
+
+
+      // build article data array
+      $data = array(
+        'event'=>$event,
+        'type'=>'article',
+        'uuid'=>$entity->uuid->value,
+        'status'=>$entity->status->value,
+        'uid'=>'1',
+        'title'=>$entity->title->value,
+        'field_bylines'=>as_webhook_update_gettermname($entity->field_byline_reference),
+        'field_dateline'=>$entity->field_dateline->value,
+        'field_media_sources'=>as_webhook_update_gettermname($entity->field_media_source_reference),
+        'field_external_media_source'=>$entity->field_external_media_source->value,
+        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_department_program),
+        'field_article_view_tags'=>'',
+        'field_related_articles'=>as_webhook_update_getarticleuuiidstring($entity->field_related_articles),
+        'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people),
+        'field_portrait_image_path'=>$portrait_image_path,
+        'field_portrait_image_alt'=>$portrait_image_alt,
+        'field_landscape_image_path'=>$landscape_image_path,
+        'field_landscape_image_alt'=>$landscape_image_alt,
+        'field_thumbnail_image_path'=>$thumbnail_image_path,
+        'field_thumbnail_image_alt'=>$thumbnail_image_alt,
+        'field_page_summary'=>$summary,
+        'field_body'=> array('format'=>'full_html','value'=>$body)
+      );
+
+    $data = json_encode($data, JSON_UNESCAPED_SLASHES);
+    
+    return $data;
+}
+
+
+/**
+ * Implements as_webhook_update_getmediareportentrydata().
+ */
+// build data from fields specific to media_report_entry
+function as_webhook_update_getmediareportentrydata($entity,$event){
+    $data = '';
+    $host = \Drupal::request()->getHost();
+    if (!empty($entity->field_summary->value)){
+      $summary = $entity->field_summary->value;
+    }else{
+      $summary = $title;
+    }
+    // build media_report_entry data array
+    // field_remote_uuid
+    // title
+    // field_outlet_name
+    // field_news_date
+    // field_news_link/uri
+    // field_related_department_program
+    // field_related_people
+    // field_media_report_public_cat
+    // summary
+    // body
+    $data = array(
+      'event'=>$event,
+      'type'=>'media_report_entry',
+      'uuid'=>$entity->uuid->value,
+      'status'=>$entity->status->value,
+      'uid'=>'1',
+      'title'=>$entity->title->value,
+      'field_outlet_name'=>as_webhook_update_gettermname($entity->field_media_source_reference),
+      'field_news_date'=>$entity->field_dateline->value,
+      'field_news_link'=>'https://'.$host.'/node/'.$entity->nid->value,
+      //'field_external_media_source'=>$entity->field_external_media_source->value,
+      'field_related_department_program'=>as_webhook_update_gettermnamestring($entity->field_department_program),
+      'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people),
+      'summary'=>$summary,
+      'field_body'=> array('format'=>'plain_text','value'=>$summary)
+      );
+
+    $data = json_encode($data, JSON_UNESCAPED_SLASHES);
+    
+    return $data;
+}
+
+
+/**
+ * Implements as_webhook_update_getpersondata().
+ */
+// build data from fields specific to person
+function as_webhook_update_getpersondata($entity,$event){
+    $data = '';
+    $uuid = $entity->uuid->value;
+    $title = $entity->title->value;
+    if (!empty($entity->field_summary->entity->field_description->value)){
+      $summary = as_webhook_update_getsummary($entity->field_summary->entity->field_description->value);
+    }else{
+      $summary = $title;
+    }
+    $body = '';
+    $education = '';
+    $keywords = '';
+    $portrait_image_path = '';
+    // mash up body
+    if (!empty($entity->field_summary->entity->field_description->value)){
+      $body = '<h3>Overview</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_description->value));
+      }
+    if (!empty($entity->field_summary->entity->field_person_research_focus->value)){
+       $body =  $body . '<h3>Research Focus</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_person_research_focus->value));
+      }
+    if (!empty($entity->field_awards_and_honors->value)){
+      $body =  $body . '<h3>Awards and Honors</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_awards_and_honors->value));
+      }
+    if (!empty($entity->field_professional_experience->value)){
+      $body =  $body . '<h3>Professional Experience</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_professional_experience->value));
+      }
+    if (!empty($entity->field_affiliations->value)){
+      $body =  $body . '<h3>Affiliations</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_affiliations->value));
+      }
+    if (!empty($entity->field_person_publications->value)){
+      $body =  $body . '<h3>Publications</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_person_publications->value));
+      }
+    if (!empty($entity->field_responsibilities->value)){
+      $body =  $body . '<h3>Responsibilities</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_responsibilities->value));
+      }
+    // put all field formats into an array
+    $bodyformat = [];
+    // description
+    if (!empty($entity->field_summary->entity->field_description->format)){
+    array_push($bodyformat,  $entity->field_summary->entity->field_description->format);
+    }
+    // research focus
+    if (!empty($entity->field_summary->entity->field_person_research_focus->format)){
+    array_push($bodyformat,  $entity->field_summary->entity->field_person_research_focus->format);
+    }
+    // awards and honors
+    if (!empty($entity->field_awards_and_honors->format)){
+    array_push($bodyformat,  $entity->field_awards_and_honors->format);
+    }
+    // professional experience
+    if (!empty($entity->field_professional_experience->format)){
+    array_push($bodyformat,  $entity->field_professional_experience->format);
+    }
+    // affiliations
+    if (!empty($entity->field_affiliations->format)){
+    array_push($bodyformat,  $entity->field_affiliations->format);
+    }
+    // publications
+    if (!empty($entity->field_person_publications->format)){
+    array_push($bodyformat,  $entity->field_person_publications->format);
+    }
+    // responsibilities
+    if (!empty($entity->field_responsibilities->format)){
+    array_push($bodyformat,  $entity->field_responsibilities->format);
+    }
+    // if one of the array is mathjax, set mathjax as format otherwise set full_html
+    if (in_array('html_with_mathjax', $bodyformat)) {
+    $bodyformat = [];
+    array_push($bodyformat, 'html_with_mathjax');
+    }else{
+    $bodyformat = [];
+    array_push($bodyformat, 'full_html');
+    }
+
+
+    // education
+    if (!empty($entity->field_person_education->value)){
+      $education =  trim(preg_replace('/\s\s+/', '', $entity->field_person_education->value));
+      }
+    // keywords
+    if (!empty($entity->field_keywords->value)){
+      $keywords =  trim(preg_replace('/\s\s+/', '', $entity->field_keywords->value));
+      }
+    // links
+    if (!empty($entity->field_links)){
+      $links =  $entity->field_links;
+      }
+    if (!empty($entity->field_image)) {
+      foreach ($entity->field_image as $pireference) {
+        //$portrait_image_path = ltrim($pireference->entity->field_media_image->entity->getFileUri(), 'public://');
+        if (!empty($pireference->entity->field_media_image->entity)) {
+          $portrait_image_path = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
+          $portrait_image_path = 'https://people.as.cornell.edu/sites/default/files/styles/person_image/'.$portrait_image_path;
+          }
+        }
+        
+    }else{
+        $portrait_image_path = 'https://people.as.cornell.edu/sites/default/files/styles/person_image/public/thomas-d-fox.jpg';
+    }
+
+    // primary college
+     if (!empty($entity->field_primary_college->entity->name->value)){
+      $primarycollege =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_college->entity->name->value));
+      }else{
+        $primarycollege = '';
+      }
+    // primary department
+     if (!empty($entity->field_primary_department->entity->name->value)){
+      $primarydepartment =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_department->entity->name->value));
+      }else{
+        $primarydepartment = '';
+      }
+
+
+    // build person data array
+    $data = array(
+        'event'=>$event,
+        'type'=>'person',
+        'uuid'=>$entity->uuid->value,
+        'status'=>$entity->status->value,
+        'uid'=>'1',
+        'title'=>$entity->title->value,
+        'netid'=>$entity->field_person_netid->value,
+        'field_person_last_name'=>$entity->field_person_last_name->value,
+        'field_job_title'=>$entity->field_person_title->value,
+        'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
+        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
+        'field_primary_department'=>$primarydepartment,
+        'field_portrait_image_path'=>$portrait_image_path,
+        'field_academic_role'=>as_webhook_update_gettidstring($entity->field_academic_role),
+        'field_research_areas'=>as_webhook_update_gettidstring($entity->field_research_areas),
+        'field_academic_interests'=>as_webhook_update_gettidstring($entity->field_academic_interests),
+        'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
+        'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
+        'field_summary'=>$summary,
+        'field_education'=>array('format'=>$entity->field_person_education->format,'value'=>$education),
+        'field_keywords'=>array('format'=>$entity->field_keywords->format,'value'=>$keywords),
+        'field_body'=> array('format'=>$bodyformat[0],'value'=>$body),
+        'field_as_directory'=>$entity->field_as_directory->value,
+        'field_hide_contact_info'=>$entity->field_hide_contact_info->value,
+        'field_exclude_directory'=>$entity->field_exclude_directory->value,
+        'field_primary_college'=>$primarycollege,
+        'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
+
+      );
+
+    $data = json_encode($data, JSON_UNESCAPED_SLASHES);
+
+    return $data;
+}
+
+
+/**
+ * Implements as_webhook_update_getmediareportpersondata().
+ */
+// build data from fields specific to person
+function as_webhook_update_getmediareportpersondata($entity,$event){
+    $data = '';
+    $host = \Drupal::request()->getHost();
+    // primary college
+     if (!empty($entity->field_primary_college->entity->name->value)){
+      $primarycollege =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_college->entity->name->value));
+      }else{
+        $primarycollege = '';
+      }
+    // primary department
+     if (!empty($entity->field_primary_department->entity->name->value)){
+      $primarydepartment =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_department->entity->name->value));
+      }else{
+        $primarydepartment = '';
+      }
+      $nodealias = 'https://people.as.cornell.edu/node/'.$entity->nid->value;
+
+    // build media_report_person data array
+    // field_people_uuid
+    // title
+    // field_netid
+    // field_person_last_name
+    // field_person_type
+    // field_departments_programs/id
+    // field_link/uri
+    
+    $data = array(
+        'event'=>$event,
+        'type'=>'media_report_person',
+        'uuid'=>$entity->uuid->value,
+        'status'=>$entity->status->value,
+        'uid'=>'1',
+        'title'=>$entity->title->value,
+        'netid'=>$entity->field_person_netid->value,
+        'field_person_last_name'=>$entity->field_person_last_name->value,
+        'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
+        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
+        'field_primary_department'=>$primarydepartment,
+        'field_link'=>'https://'.$host.'/node/'.$entity->nid->value,
+        'field_primary_college'=>$primarycollege,
+        'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
+
+      );
+
+    $data = json_encode($data, JSON_UNESCAPED_SLASHES);
+
+    return $data;
+}
+
+/**
+ * Implements as_webhook_update_curl().
+ */
+function as_webhook_update_getcurl($data,$url){
+  // variables
+  $host = \Drupal::request()->getHost();
+  $auth_token = \Drupal::config('as_webhook_update.settings')->get('token');
+  //curl request
+  $ch = curl_init($url);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    'Authorization: ' . $auth_token,
+    'Content-Type: application/json'
+  ));
+  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); 
+  curl_setopt($ch, CURLOPT_TIMEOUT, 10); //timeout in seconds
+
+  $result = curl_exec($ch);
+  $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
+
+
+
+    \Drupal::logger('as_webhook_update')
+    ->info("curl request was made by {$host} " . __FUNCTION__." to {$url}, result ".json_encode($result, JSON_PRETTY_PRINT).",http code ".json_encode($httpcode, JSON_PRETTY_PRINT).",<br>data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+    
+}
+
+
+/**
+ * Implements as_webhook_update_getsummary().
+ */
+function as_webhook_update_getsummary($summary){
+    $summary = substr($summary,0, strpos($summary, "</p>")+4);
+    $summary = str_replace('&nbsp;', '',str_replace('"', '', str_replace('<p>', '', str_replace('<p/>', '', $summary))));
+    //$summary = str_replace('"', $summary);
+    $summary = strip_tags($summary);
+    return $summary;
+}
+
+/**
+ * Implements as_webhook_update_getbody().
+ */
+function as_webhook_update_getbody($body){
+    $bodyencode['format'] = 'full_html';
+    $bodyencode['value'] = trim(preg_replace('/\s\s+/', '',$body));
+    $body = json_encode($bodyencode, JSON_UNESCAPED_SLASHES);
+    return $body;
+}
+
+
+/**
+ * Implements as_webhook_update_gettidstring().
+ */
+function as_webhook_update_gettid($fielddata){
+    $tid = '';
+    foreach ($fielddata as $termreference) {
+      $tid = $termreference->entity->tid->value;
+      }
+    return $tid;
+}
+
+/**
+ * Implements as_webhook_update_gettermname().
+ */
+function as_webhook_update_gettermname($fielddata){
+    $termname = '';
+    foreach ($fielddata as $termreference) {
+      $termname= $termreference->entity->name->value;
+      }
+    return $termname;
+}
+
+
+/**
+ * Implements as_webhook_update_gettidstring().
+ */
+function as_webhook_update_gettidstring($fielddata){
+    $tidstring = '';
+    foreach ($fielddata as $termreference) {
+      $tidstring = $tidstring .','. $termreference->entity->tid->value;
+      }
+    $tidstring = ltrim($tidstring, ',');
+    return $tidstring;
+}
+
+
+/**
+ * Implements as_webhook_update_gettermnamestring().
+ */
+function as_webhook_update_gettermnamestring($fielddata){
+    $termnamestring = '';
+    foreach ($fielddata as $termreference) {
+      $termnamestring = $termnamestring .'|'. $termreference->entity->name->value;
+      }
+    $termnamestring = ltrim($termnamestring, '|');
+    return $termnamestring;
+}
+
+
+/**
+ * Implements as_webhook_update_getpersonuuidstring().
+ */
+function as_webhook_update_getpersonuuiidstring($fielddata){
+    $uuidstring = '';
+    foreach ($fielddata as $entityreference) {
+      // change to field_remote_uuid after switching related people to nodes
+      $uuidstring = $uuidstring .','. $entityreference->entity->field_people_uuid->value;
+      }
+    $uuidstring = ltrim($uuidstring, ',');
+    return $uuidstring;
+}
+
+
+/**
+ * Implements as_webhook_update_getarticleuuidstring().
+ */
+function as_webhook_update_getarticleuuiidstring($fielddata){
+    $uuidstring = '';
+    foreach ($fielddata as $entityreference) {
+      $uuidstring = $uuidstring .','. $entityreference->entity->uuid->value;
+      }
+    $uuidstring = ltrim($uuidstring, ',');
+    return $uuidstring;
+}
+
+
+/**
+ * Implements as_webhook_update_getpersonlinks().
+ */
+function as_webhook_update_getpersonlinks($fielddata){
+    $links = '';
+    if (!empty($fielddata)) {
+      
+    foreach ($fielddata as $link) {
+      $links = $links .','. $link->uri;
+      //$links[] = array('uri'=>$link->uri,'title'=>$link->title);
+      }
+      $links = ltrim($links, ',');
+    }
+    return $links;
+}
+
+/**
+ * Implements as_webhook_update_getpersonlinktitles().
+ */
+function as_webhook_update_getpersonlinktitles($fielddata){
+    $titles = '';
+    if (!empty($fielddata)) {
+      
+    foreach ($fielddata as $title) {
+      $titles = $titles .','. $title->title;
+      }
+      $titles = ltrim($titles, ',');
+    }
+    return $titles;
+}
+
+/**
+ * Implements as_webhook_update_getdomainschema().
+ */
+function as_webhook_update_getdomainschema(){
+    $domain_schema = [];
+    $host = \Drupal::request()->getHost();
+    $as_domains = array('artsci-as.lndo.site','dev-artsci-as.pantheonsite.io','test-artsci-as.pantheonsite.io','live-artsci-as.pantheonsite.io','as.cornell.edu');
+    $people_domains = array('artsci-people.lndo.site','dev-artsci-people.pantheonsite.io','test-artsci-people.pantheonsite.io','live-artsci-people.pantheonsite.io','people.as.cornell.edu');
+    if (!empty($host)) {
+      // people
+      if ($host == 'artsci-people.lndo.site') {
+        $deptpeopleurl = 'http://artsci-departments.lndo.site/webhook-entities/listener';
+        $aspeopleurl = 'http://artsci-as.lndo.site/webhook-entities/listener';
+        $mediareporturl = 'http://artsci-mediareport.lndo.site/webhook-entities/listener';
+      }
+      if ($host == 'test-artsci-people.pantheonsite.io') {
+        $deptpeopleurl = 'http://test-artsci-departments.pantheonsite.io/webhook-entities/listener';
+        $aspeopleurl = 'http://test-artsci-as.pantheonsite.io/webhook-entities/listener';
+        $mediareporturl = 'http://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener';
+      }
+      if ($host == 'people.as.cornell.edu') {
+        $deptpeopleurl = 'https://departments.as.cornell.edu/webhook-entities/listener';
+        $aspeopleurl = 'https://as.cornell.edu/webhook-entities/listener';
+        $mediareporturl = 'https://mediareport.as.cornell.edu/webhook-entities/listener';
+      }
+      // as
+      if ($host == 'artsci-as.lndo.site') {
+        $articlesurl = 'http://artsci-departments.lndo.site/webhook-entities/listener';
+        $mediareporturl = 'http://artsci-mediareport.lndo.site/webhook-entities/listener';
+      }
+      if ($host == 'test-artsci-as.pantheonsite.io') {
+        $articlesurl = 'http://test-artsci-departments.pantheonsite.io/webhook-entities/listener';
+        $mediareporturl = 'http://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener';
+      }
+      if ($host == 'as.cornell.edu') {
+        $articlesurl = 'https://departments.as.cornell.edu/webhook-entities/listener';
+        $mediareporturl = 'https://mediareport.as.cornell.edu/webhook-entities/listener';
+      }
+      $domain_schema['domain'] = $host;
+      if (in_array($host, $as_domains)) {
+      $domain_schema['schema'] = 'as';
+      $domain_schema['articlesurl'] = $articlesurl;
+      $domain_schema['mediareporturl'] = $mediareporturl;
+      }
+      if (in_array($host, $people_domains)) {
+      $domain_schema['schema'] = 'people';
+      $domain_schema['deptpeopleurl'] = $deptpeopleurl;
+      $domain_schema['aspeopleurl'] = $aspeopleurl;
+      $domain_schema['mediareporturl'] = $mediareporturl;
+      }
+      
+    }
+
+    return $domain_schema;
+}
+
