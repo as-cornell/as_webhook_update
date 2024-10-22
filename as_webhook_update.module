@@ -802,9 +802,9 @@ function as_webhook_update_getdomainschema(){
         $mediareporturl = 'http://artsci-mediareport.lndo.site/webhook-entities/listener';
       }
       if ($host == 'test-artsci-people.pantheonsite.io') {
-        $deptpeopleurl = 'http://test-artsci-departments.pantheonsite.io/webhook-entities/listener';
-        $aspeopleurl = 'http://test-artsci-as.pantheonsite.io/webhook-entities/listener';
-        $mediareporturl = 'http://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener';
+        $deptpeopleurl = 'https://test-artsci-departments.pantheonsite.io/webhook-entities/listener';
+        $aspeopleurl = 'https://test-artsci-as.pantheonsite.io/webhook-entities/listener';
+        $mediareporturl = 'https://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener';
       }
       if ($host == 'people.as.cornell.edu') {
         $deptpeopleurl = 'https://departments.as.cornell.edu/webhook-entities/listener';
@@ -817,8 +817,8 @@ function as_webhook_update_getdomainschema(){
         $mediareporturl = 'http://artsci-mediareport.lndo.site/webhook-entities/listener';
       }
       if ($host == 'test-artsci-as.pantheonsite.io') {
-        $articlesurl = 'http://test-artsci-departments.pantheonsite.io/webhook-entities/listener';
-        $mediareporturl = 'http://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener';
+        $articlesurl = 'https://test-artsci-departments.pantheonsite.io/webhook-entities/listener';
+        $mediareporturl = 'https://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener';
       }
       if ($host == 'as.cornell.edu') {
         $articlesurl = 'https://departments.as.cornell.edu/webhook-entities/listener';
