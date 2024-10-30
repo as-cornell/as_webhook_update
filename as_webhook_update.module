@@ -684,9 +684,11 @@ function as_webhook_update_getbody($body){
  */
 function as_webhook_update_gettid($fielddata){
     $tid = '';
-    foreach ($fielddata as $termreference) {
-      $tid = $termreference->entity->tid->value;
+    if (!empty($fielddata)) {
+      foreach ($fielddata as $termreference) {
+        $tid = $termreference->entity->tid->value;
       }
+    }
     return $tid;
 }
 
@@ -695,9 +697,11 @@ function as_webhook_update_gettid($fielddata){
  */
 function as_webhook_update_gettermname($fielddata){
     $termname = '';
-    foreach ($fielddata as $termreference) {
-      $termname= $termreference->entity->name->value;
+    if (!empty($fielddata)) {
+      foreach ($fielddata as $termreference) {
+        $termname= $termreference->entity->name->value;
       }
+    }
     return $termname;
 }
 
@@ -707,10 +711,12 @@ function as_webhook_update_gettermname($fielddata){
  */
 function as_webhook_update_gettidstring($fielddata){
     $tidstring = '';
-    foreach ($fielddata as $termreference) {
-      $tidstring = $tidstring .','. $termreference->entity->tid->value;
+    if (!empty($fielddata)) {
+      foreach ($fielddata as $termreference) {
+        $tidstring = $tidstring .','. $termreference->entity->tid->value;
       }
-    $tidstring = ltrim($tidstring, ',');
+      $tidstring = ltrim($tidstring, ',');
+    }
     return $tidstring;
 }
 
@@ -720,10 +726,13 @@ function as_webhook_update_gettidstring($fielddata){
  */
 function as_webhook_update_gettermnamestring($fielddata){
     $termnamestring = '';
-    foreach ($fielddata as $termreference) {
-      $termnamestring = $termnamestring .'|'. $termreference->entity->name->value;
+    if (!empty($fielddata)) {
+      foreach ($fielddata as $termreference) {
+        $termnamestring = $termnamestring .'|'. $termreference->entity->name->value;
       }
-    $termnamestring = ltrim($termnamestring, '|');
+
+      $termnamestring = ltrim($termnamestring, '|');
+    }
     return $termnamestring;
 }
 
@@ -733,11 +742,13 @@ function as_webhook_update_gettermnamestring($fielddata){
  */
 function as_webhook_update_getpersonuuiidstring($fielddata){
     $uuidstring = '';
-    foreach ($fielddata as $entityreference) {
-      // change to field_remote_uuid after switching related people to nodes
-      $uuidstring = $uuidstring .','. $entityreference->entity->field_people_uuid->value;
+    if (!empty($fielddata)) {
+      foreach ($fielddata as $entityreference) {
+        // change to field_remote_uuid after switching related people to nodes
+        $uuidstring = $uuidstring .','. $entityreference->entity->field_people_uuid->value;
       }
     $uuidstring = ltrim($uuidstring, ',');
+    }
     return $uuidstring;
 }
 
@@ -747,10 +758,12 @@ function as_webhook_update_getpersonuuiidstring($fielddata){
  */
 function as_webhook_update_getarticleuuiidstring($fielddata){
     $uuidstring = '';
-    foreach ($fielddata as $entityreference) {
-      $uuidstring = $uuidstring .','. $entityreference->entity->uuid->value;
+    if (!empty($fielddata)) {
+      foreach ($fielddata as $entityreference) {
+        $uuidstring = $uuidstring .','. $entityreference->entity->uuid->value;
       }
-    $uuidstring = ltrim($uuidstring, ',');
+      $uuidstring = ltrim($uuidstring, ',');
+    }
     return $uuidstring;
 }
 
@@ -761,10 +774,9 @@ function as_webhook_update_getarticleuuiidstring($fielddata){
 function as_webhook_update_getpersonlinks($fielddata){
     $links = '';
     if (!empty($fielddata)) {
-      
-    foreach ($fielddata as $link) {
-      $links = $links .','. $link->uri;
-      //$links[] = array('uri'=>$link->uri,'title'=>$link->title);
+      foreach ($fielddata as $link) {
+        $links = $links .','. $link->uri;
+        //$links[] = array('uri'=>$link->uri,'title'=>$link->title);
       }
       $links = ltrim($links, ',');
     }
