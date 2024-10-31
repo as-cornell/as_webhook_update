@@ -286,12 +286,12 @@ function as_webhook_update_getarticledata($entity,$event){
       $portrait_image_alt = $pireference->entity->field_media_image->alt;
       }
     // set default, overwrite if there's data  
-    $landscape_image_path = 'https://as.cornell.edu/files/first/styles/6_4_newsletter/'.$portrait_image_file;
+    $landscape_image_path = 'https://as.cornell.edu/files/first/styles/6_4_large/'.$portrait_image_file;
     $landscape_image_alt = $portrait_image_alt;
     if (!empty($entity->field_newsletter_image)){
       foreach ($entity->field_newsletter_image as $lireference) {
         $landscape_image_path = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity->getFileUri());
-        $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/'.$landscape_image_path;
+        $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_large/'.$landscape_image_path;
         $landscape_image_alt = $lireference->entity->field_media_image->alt;
         }
     }
