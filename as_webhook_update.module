@@ -281,28 +281,25 @@ function as_webhook_update_getarticledata($entity,$event){
     }
     // images
     foreach ($entity->field_image as $pireference) {
-      //$portrait_image_path = ltrim($pireference->entity->field_media_image->entity->getFileUri(), 'public://');
-      $portrait_image_path = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
-      $portrait_image_path = 'https://as.cornell.edu/sites/default/files/styles/4_5/'.$portrait_image_path;
+      $portrait_image_file = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
+      $portrait_image_path = 'https://as.cornell.edu/sites/default/files/styles/4_5/'.$portrait_image_file;
       $portrait_image_alt = $pireference->entity->field_media_image->alt;
       }
     // set default, overwrite if there's data  
-    $landscape_image_path = 'https://as.cornell.edu/files/first/styles/6_4_large/public/2021-09/arts-quad-fallweb.jpg';
-    $landscape_image_alt = 'Student walks on Arts Quad in fall';
+    $landscape_image_path = 'https://as.cornell.edu/files/first/styles/6_4_large/'.$portrait_image_file;
+    $landscape_image_alt = $portrait_image_alt;
     if (!empty($entity->field_newsletter_image)){
       foreach ($entity->field_newsletter_image as $lireference) {
-        //$landscape_image_path = ltrim($lireference->entity->field_media_image->entity->getFileUri(), 'public://');
         $landscape_image_path = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity->getFileUri());
         $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/'.$landscape_image_path;
         $landscape_image_alt = $lireference->entity->field_media_image->alt;
         }
     }
     // set default, overwrite if there's data
-    $thumbnail_image_path = 'https://as.cornell.edu/files/first/styles/1_1_thumbnail/public/field/image/UP_1092_13_039_select-450.jpg';
-    $thumbnail_image_alt = 'Ezra Cornell statue on the Arts Quad in fall';
+    $thumbnail_image_path = 'https://as.cornell.edu/files/first/styles/1_1_thumbnail/'.$portrait_image_file;
+    $thumbnail_image_alt = $portrait_image_alt;
     if (!empty($entity->field_thumbnail_image)){
       foreach ($entity->field_thumbnail_image as $tireference) {
-        //$thumbnail_image_path = ltrim($tireference->entity->field_media_image->entity->getFileUri(), 'public://');
         $thumbnail_image_path = str_replace('public://', 'public/', $tireference->entity->field_media_image->entity->getFileUri());
         $thumbnail_image_path = 'https://as.cornell.edu/sites/default/files/styles/1_1_thumbnail/'.$thumbnail_image_path ;
         $thumbnail_image_alt = $tireference->entity->field_media_image->alt;
