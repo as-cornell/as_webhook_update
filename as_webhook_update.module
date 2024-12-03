@@ -287,7 +287,7 @@ function as_webhook_update_getarticledata($entity,$event){
       $portrait_image_alt = $pireference->entity->field_media_image->alt;
       }
     // set default, overwrite if there's data  
-    $landscape_image_path = 'https://as.cornell.edu/files/first/styles/6_4_large/'.$portrait_image_file;
+    $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_large/'.$portrait_image_file;
     $landscape_image_alt = $portrait_image_alt;
     if (!empty($entity->field_newsletter_image)){
       foreach ($entity->field_newsletter_image as $lireference) {
@@ -297,7 +297,7 @@ function as_webhook_update_getarticledata($entity,$event){
         }
     }
     // set default, overwrite if there's data
-    $thumbnail_image_path = 'https://as.cornell.edu/files/first/styles/1_1_thumbnail/'.$portrait_image_file;
+    $thumbnail_image_path = 'https://as.cornell.edu/sites/default/files/styles/1_1_thumbnail/'.$portrait_image_file;
     $thumbnail_image_alt = $portrait_image_alt;
     if (!empty($entity->field_thumbnail_image)){
       foreach ($entity->field_thumbnail_image as $tireference) {
