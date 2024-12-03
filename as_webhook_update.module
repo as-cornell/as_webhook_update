@@ -324,7 +324,7 @@ function as_webhook_update_getarticledata($entity,$event){
         // figure wrapper
         if ($acreference->entity->bundle() == 'figure_wrapper') {
           
-          // figure image
+          // figure image in figure wrapper
           if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_image') {
             $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
             if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption)) {
@@ -336,7 +336,7 @@ function as_webhook_update_getarticledata($entity,$event){
             $body = $body . '</figcaption> </figure>';
           }
     
-          // figure video
+          // figure video in figure wrapper
           if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_video') {
             $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
             $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_embed_code->value));
@@ -344,6 +344,15 @@ function as_webhook_update_getarticledata($entity,$event){
             $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_caption->value));
             $body = $body . '</figcaption></figure>';
           }
+        }
+
+        // figure video outside of wrapper
+        if ($acreference->entity->bundle() == 'figure_video') {
+          $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
+          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_embed_code->value));
+          $body = $body . '</div><figcaption>';
+          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_caption->value));
+          $body = $body . '</figcaption></figure>';
         }
       }
     }
