@@ -323,36 +323,45 @@ function as_webhook_update_getarticledata($entity,$event){
         
         // figure wrapper
         if ($acreference->entity->bundle() == 'figure_wrapper') {
-          
+          foreach ($acreference->entity->field_figures_reference as $figreference) {
           // figure image in figure wrapper
-          if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_image') {
-            $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_large/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
-            if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption)) {
-              $body = $body . ' <span class="caption">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption->value .'</span>';
+            if ($figreference->entity->bundle() == 'figure_image') {
+              $body = $body . '<figure class="figure figure--image"> <img src="https://as.cornell.edu/sites/default/files/styles/6_4_large/public/'. ltrim($figreference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"> <figcaption>';
+              if (!empty($figreference->entity->field_figure_image->entity->field_caption)) {
+                $body = $body . ' <span class="caption">' . $figreference->entity->field_figure_image->entity->field_caption->value .'</span>';
+              }
+              if (!empty($figreference->entity->field_figure_image->entity->field_credit)) {
+                $body = $body . ' <span class="credit">' . $figreference->entity->field_figure_image->entity->field_credit->value .'</span>';
+              } 
+              $body = $body . '</figcaption> </figure>';
             }
-            if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit)) {
-              $body = $body . ' <span class="credit">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit->value .'</span>';
-            } 
-            $body = $body . '</figcaption> </figure>';
-          }
-    
-          // figure video in figure wrapper
-          if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_video') {
-            $body = $body . '<figure class="media"><div class="videoContainer">';
-            $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_embed_code->value));
-            $body = $body . '</div><figcaption>';
-            $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_caption->value));
-            $body = $body . '</figcaption></figure>';
+      
+            // figure video in figure wrapper
+            if ($figreference->entity->bundle() == 'figure_video') {
+              $body = $body . '<figure class="media"> <div class="videoContainer">';
+              $body = $body . trim(preg_replace('/\s\s+/', '',$figreference->entity->field_video_embed_code->value));
+              $body = $body . '</div>';
+              if ($figreference->entity->field_video_caption->value) {
+                $body = $body . ' <figcaption> <span class="caption">';
+                $body = $body . trim(preg_replace('/\s\s+/', '',$figreference->entity->field_video_caption->value));
+                $body = $body . '</span> </figcaption> ';
+              }
+              $body = $body . '</figure>';
+            }
           }
         }
 
         // figure video outside of wrapper
         if ($acreference->entity->bundle() == 'figure_video') {
-          $body = $body . '<figure class="media"><div class="videoContainer">';
+          $body = $body . '<figure class="media"> <div class="videoContainer">';
           $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_embed_code->value));
-          $body = $body . '</div><figcaption>';
-          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_caption->value));
-          $body = $body . '</figcaption></figure>';
+          $body = $body . '</div>';
+          if ($acreference->entity->field_video_caption->value) {
+            $body = $body . ' <figcaption> <span class="caption">';
+            $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_caption->value));
+            $body = $body . '</span> </figcaption> ';
+          }
+          $body = $body . '</figure>';
         }
       }
     }
