@@ -326,7 +326,7 @@ function as_webhook_update_getarticledata($entity,$event){
           
           // figure image in figure wrapper
           if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_image') {
-            $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
+            $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_large/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
             if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption)) {
               $body = $body . ' <span class="caption">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption->value .'</span>';
             }
@@ -338,7 +338,7 @@ function as_webhook_update_getarticledata($entity,$event){
     
           // figure video in figure wrapper
           if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_video') {
-            $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
+            $body = $body . '<figure class="media"><div class="videoContainer">';
             $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_embed_code->value));
             $body = $body . '</div><figcaption>';
             $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_caption->value));
@@ -348,7 +348,7 @@ function as_webhook_update_getarticledata($entity,$event){
 
         // figure video outside of wrapper
         if ($acreference->entity->bundle() == 'figure_video') {
-          $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
+          $body = $body . '<figure class="media"><div class="videoContainer">';
           $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_embed_code->value));
           $body = $body . '</div><figcaption>';
           $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_video_caption->value));
