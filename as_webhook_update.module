@@ -272,6 +272,7 @@ function as_webhook_update_node_postdelete(EntityInterface $entity) {
 // build data from fields specific to article
 function as_webhook_update_getarticledata($entity,$event){
     $data = '';
+    $body = '';
     //$uuid = $entity->uuid->value;
     //$title = $entity->title->value;
     if (!empty($entity->field_summary->value)){
@@ -305,31 +306,39 @@ function as_webhook_update_getarticledata($entity,$event){
         $thumbnail_image_alt = $tireference->entity->field_media_image->alt;
         }
     }
-    $body = '';
-    foreach ($entity->field_article_components_entity as $acreference) {
-      if ($acreference->entity->bundle() == 'formatted_text_block') {
-        $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://as.cornell.edu/sites/default/files/styles/', preg_replace('/\s\s+/', '',$acreference->entity->field_formatted_text->processed)));
-        }
-      if ($acreference->entity->bundle() == 'figure_wrapper') {
-        if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_image') {
-          $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
-           if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption)) {
-              $body = $body . ' <span class="caption">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption->value .'</span>';
+    // body
+    if (!empty($entity->body)) {
+      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://as.cornell.edu/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->value)));
+
+    }
+
+    // page components
+    if (!empty($entity->field_article_components_entity)) {
+      foreach ($entity->field_article_components_entity as $acreference) {
+        if ($acreference->entity->bundle() == 'formatted_text_block') {
+          $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://as.cornell.edu/sites/default/files/styles/', preg_replace('/\s\s+/', '',$acreference->entity->field_formatted_text->processed)));
+          }
+        if ($acreference->entity->bundle() == 'figure_wrapper') {
+          if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_image') {
+            $body = $body . '<figure class="figure figure--image"><img src="https://as.cornell.edu/sites/default/files/styles/6_4_newsletter/public/'. ltrim($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"><figcaption>';
+             if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption)) {
+                $body = $body . ' <span class="caption">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_caption->value .'</span>';
+              }
+              if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit)) {
+                $body = $body . ' <span class="credit">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit->value .'</span>';
+              } 
+              $body = $body . '</figcaption> </figure>';
             }
-            if (!empty($acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit)) {
-              $body = $body . ' <span class="credit">' . $acreference->entity->field_figures_reference->entity->field_figure_image->entity->field_credit->value .'</span>';
-            } 
-          $body = $body . '</figcaption> </figure>';
+          
+          if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_video') {
+            $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
+            $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_embed_code->value));
+            $body = $body . '</div><figcaption>';
+            $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_caption->value));
+            $body = $body . '</figcaption></figure>';
           }
-        
-        if ($acreference->entity->field_figures_reference->entity->bundle() == 'figure_video') {
-          $body = $body . '<figure class="figure figure--video"><div class="videoContainer">';
-          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_embed_code->value));
-          $body = $body . '</div><figcaption>';
-          $body = $body . trim(preg_replace('/\s\s+/', '',$acreference->entity->field_figures_reference->entity->field_video_caption->value));
-          $body = $body . '</figcaption></figure>';
-          }
-        }
+      }
+    }
       
 
       if ($acreference->entity->bundle() == 'figure_video') {
