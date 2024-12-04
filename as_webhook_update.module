@@ -309,8 +309,8 @@ function as_webhook_update_getarticledata($entity,$event){
     }
     
     // body
-    if (!empty($entity->body)) {
-      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://'.$host.'/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->value)));
+    if (!empty($entity->body->value)) {
+      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://'.$host.'/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->processed)));
     }
 
     // page components
