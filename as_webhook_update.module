@@ -273,6 +273,7 @@ function as_webhook_update_node_postdelete(EntityInterface $entity) {
 function as_webhook_update_getarticledata($entity,$event){
     $data = '';
     $body = '';
+    $host = \Drupal::request()->getHost();
     //$uuid = $entity->uuid->value;
     //$title = $entity->title->value;
     if (!empty($entity->field_summary->value)){
@@ -283,33 +284,33 @@ function as_webhook_update_getarticledata($entity,$event){
     // images
     foreach ($entity->field_image as $pireference) {
       $portrait_image_file = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
-      $portrait_image_path = 'https://as.cornell.edu/sites/default/files/styles/4_5/'.$portrait_image_file;
+      $portrait_image_path = 'https://'.$host.'/sites/default/files/styles/4_5/'.$portrait_image_file;
       $portrait_image_alt = $pireference->entity->field_media_image->alt;
       }
     // set default, overwrite if there's data  
-    $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_large/'.$portrait_image_file;
+    $landscape_image_path = 'https://'.$host.'/sites/default/files/styles/6_4_large/'.$portrait_image_file;
     $landscape_image_alt = $portrait_image_alt;
     if (!empty($entity->field_newsletter_image)){
       foreach ($entity->field_newsletter_image as $lireference) {
         $landscape_image_path = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity->getFileUri());
-        $landscape_image_path = 'https://as.cornell.edu/sites/default/files/styles/6_4_large/'.$landscape_image_path;
+        $landscape_image_path = 'https://'.$host.'/sites/default/files/styles/6_4_large/'.$landscape_image_path;
         $landscape_image_alt = $lireference->entity->field_media_image->alt;
         }
     }
     // set default, overwrite if there's data
-    $thumbnail_image_path = 'https://as.cornell.edu/sites/default/files/styles/1_1_thumbnail/'.$portrait_image_file;
+    $thumbnail_image_path = 'https://'.$host.'/sites/default/files/styles/1_1_thumbnail/'.$portrait_image_file;
     $thumbnail_image_alt = $portrait_image_alt;
     if (!empty($entity->field_thumbnail_image)){
       foreach ($entity->field_thumbnail_image as $tireference) {
         $thumbnail_image_path = str_replace('public://', 'public/', $tireference->entity->field_media_image->entity->getFileUri());
-        $thumbnail_image_path = 'https://as.cornell.edu/sites/default/files/styles/1_1_thumbnail/'.$thumbnail_image_path ;
+        $thumbnail_image_path = 'https://'.$host.'/sites/default/files/styles/1_1_thumbnail/'.$thumbnail_image_path ;
         $thumbnail_image_alt = $tireference->entity->field_media_image->alt;
         }
     }
     
     // body
     if (!empty($entity->body)) {
-      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://as.cornell.edu/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->value)));
+      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://'.$host.'/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->value)));
     }
 
     // page components
@@ -318,7 +319,7 @@ function as_webhook_update_getarticledata($entity,$event){
         
         // formatted text block
         if ($acreference->entity->bundle() == 'formatted_text_block') {
-          $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://as.cornell.edu/sites/default/files/styles/', preg_replace('/\s\s+/', '',$acreference->entity->field_formatted_text->processed)));
+          $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://'.$host.'/sites/default/files/styles/', preg_replace('/\s\s+/', '',$acreference->entity->field_formatted_text->processed)));
         }
         
         // figure wrapper
@@ -326,7 +327,7 @@ function as_webhook_update_getarticledata($entity,$event){
           foreach ($acreference->entity->field_figures_reference as $figreference) {
           // figure image in figure wrapper
             if ($figreference->entity->bundle() == 'figure_image') {
-              $body = $body . '<figure class="figure figure--image"> <img src="https://as.cornell.edu/sites/default/files/styles/6_4_large/public/'. ltrim($figreference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"> <figcaption>';
+              $body = $body . '<figure class="figure figure--image"> <img src="https://'.$host.'/sites/default/files/styles/6_4_newsletter/public/'. ltrim($figreference->entity->field_figure_image->entity->field_media_image->entity->getFileUri(), 'public://').'"> <figcaption>';
               if (!empty($figreference->entity->field_figure_image->entity->field_caption)) {
                 $body = $body . ' <span class="caption">' . $figreference->entity->field_figure_image->entity->field_caption->value .'</span>';
               }
