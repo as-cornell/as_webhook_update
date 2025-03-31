@@ -2,7 +2,7 @@ name: 'A&S Webhook Update'
 description: 'Provides a webhook notification service tied into hook_post_action, used to generate remote nodes and terms.'
 package: AS
 type: module
-core_version_requirement: ^9 || ^10
+core_version_requirement: ^9.5 || ^10 || ^11
 configure: as_webhook_update.list
 dependencies:
   - hook_post_action
