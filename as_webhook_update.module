@@ -327,7 +327,7 @@ function as_webhook_update_getarticledata($entity,$event){
         'field_dateline'=>$entity->field_dateline->value,
         'field_media_sources'=>as_webhook_update_gettermname($entity->field_media_source_reference),
         'field_external_media_source'=>$entity->field_external_media_source->value,
-        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_department_program),
+        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
         'field_article_view_tags'=>'',
         'field_related_articles'=>as_webhook_update_getarticleuuiidstring($entity->field_related_articles),
         'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
@@ -381,7 +381,7 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
       'field_news_date'=>$entity->field_dateline->value,
       'field_news_link'=>'https://'.$host.'/node/'.$entity->nid->value,
       //'field_external_media_source'=>$entity->field_external_media_source->value,
-      'field_related_department_program'=>as_webhook_update_gettermnamestring($entity->field_department_program),
+      'field_related_department_program'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
       'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
       'summary'=>$summary,
       'field_body'=> array('format'=>'plain_text','value'=>$summary)
