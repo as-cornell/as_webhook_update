@@ -406,14 +406,55 @@ function as_webhook_update_getpersondata($entity,$event){
     }else{
       $summary = $title;
     }
+    $overviewresearch = [];
     $body = '';
     $education = '';
     $keywords = '';
     $portrait_image_path = '';
+    
+    
+    // separate overview and research if there are multiples
+    // TODO test for multiples else provide single in body
+    if (!empty($entity->field_summary)){
+      foreach ($entity->field_summary as $key => $summary_entity) {
+        // Code to execute for each element's value
+        // get comma separated list of departments for each overview
+        $deptslist = '';
+        foreach ($summary_entity->entity->field_departments_programs as $dept_entity) {
+          $deptslist = $deptslist . $dept_entity->entity->name->value .'|';
+        }
+        // put all field formats into an array
+        $overviewresearchformat = [];
+        if (!empty($summary_entity->entity->field_description->format)){
+          array_push($overviewresearchformat,  $summary_entity->entity->field_description->format);
+        }
+        // research focus
+        if (!empty($summary_entity->entity->field_person_research_focus->format)){
+          array_push($overviewresearchformat,  $summary_entity->entity->field_person_research_focus->format);
+        }
+        // if one of the array is mathjax, set mathjax as format otherwise set full_html
+        if (in_array('html_with_mathjax', $overviewresearchformat)) {
+          $overviewresearchformat = [];
+          array_push($overviewresearchformat, 'html_with_mathjax');
+        }else{
+          $overviewresearchformat = [];
+          array_push($overviewresearchformat, 'full_html');
+        }
+        $overviewresearch[$key] = array(
+          'departments_programs'=>explode('|',$deptslist),
+          'overview'=>$summary_entity->entity->field_description->value,
+          'research'=>$summary_entity->entity->field_person_research_focus->value,
+          'format'=>$overviewresearchformat[0]
+        );
+      }
+
+    }
     // mash up body
+    // overview from profiles with single overview
     if (!empty($entity->field_summary->entity->field_description->value)){
       $body = '<h3>Overview</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_description->value));
       }
+    // research focus from profiles with single overview
     if (!empty($entity->field_summary->entity->field_person_research_focus->value)){
        $body =  $body . '<h3>Research Focus</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_person_research_focus->value));
       }
@@ -534,6 +575,7 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_summary'=>$summary,
         'field_education'=>array('format'=>$entity->field_person_education->format,'value'=>$education),
         'field_keywords'=>array('format'=>$entity->field_keywords->format,'value'=>$keywords),
+        'field_overview_research'=> $overviewresearch,
         'field_body'=> array('format'=>$bodyformat[0],'value'=>$body),
         'field_as_directory'=>$entity->field_as_directory->value,
         'field_hide_contact_info'=>$entity->field_hide_contact_info->value,
