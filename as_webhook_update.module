@@ -450,14 +450,14 @@ function as_webhook_update_getpersondata($entity,$event){
 
     }
     // mash up body
-    // overview from profiles with single overview
-    if (!empty($entity->field_summary->entity->field_description->value)){
-      $body = '<h3>Overview</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_description->value));
-      }
-    // research focus from profiles with single overview
-    if (!empty($entity->field_summary->entity->field_person_research_focus->value)){
-       $body =  $body . '<h3>Research Focus</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_person_research_focus->value));
-      }
+    // overview from profiles with single overview - moved to overvew_research
+    //if (!empty($entity->field_summary->entity->field_description->value)){
+      //$body = '<h3>Overview</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_description->value));
+      //}
+    // research focus from profiles with single overview - moved to overvew_research
+    //if (!empty($entity->field_summary->entity->field_person_research_focus->value)){
+       //$body =  $body . '<h3>Research Focus</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_person_research_focus->value));
+      //}
     if (!empty($entity->field_awards_and_honors->value)){
       $body =  $body . '<h3>Awards and Honors</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_awards_and_honors->value));
       }
