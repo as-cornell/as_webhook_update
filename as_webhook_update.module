@@ -13,14 +13,14 @@ use Drupal\Core\Path\AliasManager;
  */
 function as_webhook_update_node_postinsert(EntityInterface $entity) {
 //variables
-  $node_types = array('article', 'person'); // only these node types
+  $entity_types = array('article', 'person'); // only these node types
   //$people_hosts = array('artsci-people.lndo.site','test-artsci-people.pantheonsite.io', 'people.as.cornell.edu'); // only these domains
   $event = 'create'; // action to perform
   $bundle = $entity->bundle();
 
   
 
-  if (in_array($bundle, $node_types)) {
+  if (in_array($bundle, $entity_types)) {
     $domain_schema = as_webhook_update_getdomainschema();
 
     // build data from fields specific to article
@@ -114,7 +114,6 @@ function as_webhook_update_node_postupdate(EntityInterface $entity) {
       }
     
     // build data from fields specific to person, only on people
-    //if (in_array($host, $people_hosts)) {
     if ($domain_schema['schema'] == 'people') {
       if ($bundle == 'person') {
         $data = as_webhook_update_getpersondata($entity,$event);
@@ -170,7 +169,9 @@ function as_webhook_update_taxonomy_term_postinsert(EntityInterface $entity) {
         'title'=>$entity->name->value,
         'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
         'field_people_tid'=>$entity->tid->value,
-        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
+        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
+        'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_and_programs')->referencedEntities())
+
       );
   $data = json_encode($data, JSON_UNESCAPED_SLASHES);
 
@@ -203,7 +204,9 @@ function as_webhook_update_taxonomy_term_postupdate(EntityInterface $entity) {
           'title'=>$entity->name->value,
           'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
           'field_people_tid'=>$entity->tid->value,
-          'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
+          //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
+          'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_and_programs')->referencedEntities())
+
         );
     $data = json_encode($data, JSON_UNESCAPED_SLASHES);
 
@@ -333,7 +336,7 @@ function as_webhook_update_getarticledata($entity,$event){
         'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
         'field_article_view_tags'=>'',
         //'field_related_articles'=>as_webhook_update_getarticleuuiidstring($entity->field_related_articles),
-        'field_related_articles'=>array_map(fn($node) => $entity->uuid(), $entity->get('field_related_articles')->referencedEntities()),
+        'field_related_articles'=>array_map(fn($entity) => $entity->uuid(), $entity->get('field_related_articles')->referencedEntities()),
         //'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
         'field_related_people'=>array_map(fn($entity) => $entity->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
         'field_portrait_image_path'=>$portrait_image_path,
@@ -579,11 +582,11 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_primary_department'=>$entity->get('field_primary_department')->entity?->label(),
         'field_portrait_image_path'=>$portrait_image_path,
         //'field_academic_role'=>as_webhook_update_gettidstring($entity->field_academic_role),
-        'field_academic_role'=> = array_column($node->get('field_academic_role')->getValue(), 'target_id'),
+        'field_academic_role'=> array_column($entity->get('field_academic_role')->getValue(), 'target_id'),
         //'field_research_areas'=>as_webhook_update_gettidstring($entity->field_research_areas),
-        'field_research_areas'=> = array_column($node->get('field_research_areas')->getValue(), 'target_id'),
+        'field_research_areas'=> array_column($entity->get('field_research_areas')->getValue(), 'target_id'),
         //'field_academic_interests'=>as_webhook_update_gettidstring($entity->field_academic_interests),
-        'field_academic_interests'=> = array_column($node->get('field_academic_interests')->getValue(), 'target_id'),
+        'field_academic_interests'=> array_column($entity->get('field_academic_interests')->getValue(), 'target_id'),
         'field_links'=>$entity->field_links,
         //'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
         //'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
@@ -718,7 +721,7 @@ function as_webhook_update_getbody($body){
 
 
 /**
- * Implements as_webhook_update_gettidstring().
+ * Implements as_webhook_update_gettid().
  */
 function as_webhook_update_gettid($fielddata){
     $tid = '';
