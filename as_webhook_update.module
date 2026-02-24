@@ -395,9 +395,9 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
 function as_webhook_update_getpersondata($entity,$event){
     $data = '';
     if (!empty($entity->field_summary->entity->field_description->value)){
-      //$summary = $entity->field_summary->entity->field_description->value;
+      $summary = $entity->field_summary->entity->field_description->value;
       //$summary = str_replace('&nbsp;', '',str_replace('"', '', str_replace('<p>', '', str_replace('<p/>', '', $summary))));
-      $summary = trim(preg_replace('/\s\s+/', '', $entity->field_description->value));
+      //summary = trim(preg_replace('/\s\s+/', '', $entity->field_description->value));
     }else{
       $summary = 'Directory record for ' . $entity->title->value;
     }
@@ -521,16 +521,10 @@ function as_webhook_update_getpersondata($entity,$event){
 
     // links
     $links = [];
-    //$linkuris = '';
-    //$linktitles = '';
     if (!empty($entity->field_links)) {
       foreach ($entity->field_links as $link) {
-        //$linkuris = $linkuris .','. $link->uri;
-        //$linktitles = $linktitles .','. $link->title;
         $links[] = array('uri'=>$link->uri,'title'=>$link->title);
       }
-      //$linkuris = ltrim($linkuris, ',');
-      //$linktitles = ltrim($linktitles, ','); 
     }
     
     // build person data array
@@ -552,10 +546,6 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_research_areas'=> array_column($entity->get('field_research_areas')->getValue(), 'target_id'),
         'field_academic_interests'=> array_column($entity->get('field_academic_interests')->getValue(), 'target_id'),
         'field_links'=>$links,
-        //'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
-        //'field_links'=>$linkuris,
-        //'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
-        //'field_links_titles'=>$linktitles,
         'field_summary'=>$summary,
         'field_education'=>array('format'=>$entity->field_person_education->format,'value'=>$education),
         'field_keywords'=>array('format'=>$entity->field_keywords->format,'value'=>$keywords),
