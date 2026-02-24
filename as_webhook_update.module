@@ -550,7 +550,7 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_academic_role'=> array_column($entity->get('field_academic_role')->getValue(), 'target_id'),
         'field_research_areas'=> array_column($entity->get('field_research_areas')->getValue(), 'target_id'),
         'field_academic_interests'=> array_column($entity->get('field_academic_interests')->getValue(), 'target_id'),
-        'field_links_new'=>$links,
+        //'field_links_new'=>$links,
         //'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
         'field_links'=>$linkuris,
         //'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
