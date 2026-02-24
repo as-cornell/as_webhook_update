@@ -324,10 +324,10 @@ function as_webhook_update_getarticledata($entity,$event){
         'uid'=>'1',
         'title'=>$entity->title->value,
         //'field_bylines'=>as_webhook_update_gettermname($entity->field_byline_reference),
-        'field_bylines'=>$entity->get('field_byline_reference')->entity->label(),
+        'field_bylines'=>$entity->get('field_byline_reference')->entity?->label(),
         'field_dateline'=>$entity->field_dateline->value,
         //'field_media_sources'=>as_webhook_update_gettermname($entity->field_media_source_reference),
-        'field_media_sources'=>$entity->get('field_media_source_reference')->entity->label(),
+        'field_media_sources'=>$entity->get('field_media_source_reference')->entity?->label(),
         'field_external_media_source'=>$entity->field_external_media_source->value,
         //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
         'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
@@ -383,7 +383,7 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
       'uid'=>'1',
       'title'=>$entity->title->value,
       //'field_outlet_name'=>as_webhook_update_gettermname($entity->field_media_source_reference),
-      'field_outlet_name'=>$entity->get('field_media_source_reference')->entity->label(),
+      'field_outlet_name'=>$entity->get('field_media_source_reference')->entity?->label(),
       'field_news_date'=>$entity->field_dateline->value,
       'field_news_link'=>'https://'.$host.'/node/'.$entity->nid->value,
       //'field_external_media_source'=>$entity->field_external_media_source->value,
@@ -458,11 +458,11 @@ function as_webhook_update_getpersondata($entity,$event){
 
     }
     // mash up body
-    // overview from profiles with single overview - moved to overvew_research
+    // overview from profiles with single overview - moved to overview_research
     //if (!empty($entity->field_summary->entity->field_description->value)){
       //$body = '<h3>Overview</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_description->value));
       //}
-    // research focus from profiles with single overview - moved to overvew_research
+    // research focus from profiles with single overview - moved to overview_research
     //if (!empty($entity->field_summary->entity->field_person_research_focus->value)){
        //$body =  $body . '<h3>Research Focus</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_person_research_focus->value));
       //}
@@ -543,7 +543,7 @@ function as_webhook_update_getpersondata($entity,$event){
         }
         
     }else{
-        $portrait_image_path = 'https://people.as.cornell.edu/sites/default/files/styles/person_image/public/thomas-d-fox.jpg';
+        $portrait_image_path = 'https://people.as.cornell.edu/sites/default/files/default_images/Klarman.jpg';
     }
 
     // primary college
@@ -571,15 +571,22 @@ function as_webhook_update_getpersondata($entity,$event){
         'netid'=>$entity->field_person_netid->value,
         'field_person_last_name'=>$entity->field_person_last_name->value,
         'field_job_title'=>$entity->field_person_title->value,
-        'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
-        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
-        'field_primary_department'=>$primarydepartment,
+        //'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
+        'field_person_type'=>$entity->get('field_person_type')->entity?->label(),
+        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
+        'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
+        //'field_primary_department'=>$primarydepartment,
+        'field_primary_department'=>$entity->get('field_primary_department')->entity?->label(),
         'field_portrait_image_path'=>$portrait_image_path,
-        'field_academic_role'=>as_webhook_update_gettidstring($entity->field_academic_role),
-        'field_research_areas'=>as_webhook_update_gettidstring($entity->field_research_areas),
-        'field_academic_interests'=>as_webhook_update_gettidstring($entity->field_academic_interests),
-        'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
-        'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
+        //'field_academic_role'=>as_webhook_update_gettidstring($entity->field_academic_role),
+        'field_academic_role'=> = array_column($node->get('field_academic_role')->getValue(), 'target_id'),
+        //'field_research_areas'=>as_webhook_update_gettidstring($entity->field_research_areas),
+        'field_research_areas'=> = array_column($node->get('field_research_areas')->getValue(), 'target_id'),
+        //'field_academic_interests'=>as_webhook_update_gettidstring($entity->field_academic_interests),
+        'field_academic_interests'=> = array_column($node->get('field_academic_interests')->getValue(), 'target_id'),
+        'field_links'=>$entity->field_links,
+        //'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
+        //'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
         'field_summary'=>$summary,
         'field_education'=>array('format'=>$entity->field_person_education->format,'value'=>$education),
         'field_keywords'=>array('format'=>$entity->field_keywords->format,'value'=>$keywords),
@@ -588,8 +595,10 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_as_directory'=>$entity->field_as_directory->value,
         'field_hide_contact_info'=>$entity->field_hide_contact_info->value,
         'field_exclude_directory'=>$entity->field_exclude_directory->value,
-        'field_primary_college'=>$primarycollege,
-        'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
+        //'field_primary_college'=>$primarycollege,
+        'field_primary_college'=>$entity->get('field_primary_college')->entity?->label(),
+        //'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
+        'field_affiliated_colleges'=>array_map(fn($term) => $term->label(), $entity->get('field_affiliated_colleges')->referencedEntities())
 
       );
 
@@ -607,18 +616,17 @@ function as_webhook_update_getmediareportpersondata($entity,$event){
     $data = '';
     $host = \Drupal::request()->getHost();
     // primary college
-     if (!empty($entity->field_primary_college->entity->name->value)){
+    if (!empty($entity->field_primary_college->entity->name->value)){
       $primarycollege =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_college->entity->name->value));
-      }else{
-        $primarycollege = '';
-      }
+    }else{
+      $primarycollege = '';
+    }
     // primary department
-     if (!empty($entity->field_primary_department->entity->name->value)){
+    if (!empty($entity->field_primary_department->entity->name->value)){
       $primarydepartment =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_department->entity->name->value));
-      }else{
-        $primarydepartment = '';
-      }
-      $nodealias = 'https://people.as.cornell.edu/node/'.$entity->nid->value;
+    }else{
+      $primarydepartment = '';
+    }
 
     // build media_report_person data array
     // field_people_uuid
@@ -638,12 +646,17 @@ function as_webhook_update_getmediareportpersondata($entity,$event){
         'title'=>$entity->title->value,
         'netid'=>$entity->field_person_netid->value,
         'field_person_last_name'=>$entity->field_person_last_name->value,
-        'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
-        'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
-        'field_primary_department'=>$primarydepartment,
+        //'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
+        'field_person_type'=>$entity->get('field_person_type')->entity?->label(),
+        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
+        'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
+        //'field_primary_department'=>$primarydepartment,
+        'field_primary_department'=>$entity->get('field_primary_department')->entity?->label(),
         'field_link'=>'https://'.$host.'/node/'.$entity->nid->value,
-        'field_primary_college'=>$primarycollege,
-        'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
+        //'field_primary_college'=>$primarycollege,
+        'field_primary_college'=>$entity->get('field_primary_college')->entity?->label(),
+        //'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
+        'field_affiliated_colleges'=>array_map(fn($term) => $term->label(), $entity->get('field_affiliated_colleges')->referencedEntities())
 
       );
 
