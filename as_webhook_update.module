@@ -382,12 +382,15 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
       'status'=>$entity->status->value,
       'uid'=>'1',
       'title'=>$entity->title->value,
-      'field_outlet_name'=>as_webhook_update_gettermname($entity->field_media_source_reference),
+      //'field_outlet_name'=>as_webhook_update_gettermname($entity->field_media_source_reference),
+      'field_outlet_name'=>$entity->get('field_media_source_reference')->entity->label(),
       'field_news_date'=>$entity->field_dateline->value,
       'field_news_link'=>'https://'.$host.'/node/'.$entity->nid->value,
       //'field_external_media_source'=>$entity->field_external_media_source->value,
-      'field_related_department_program'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
-      'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
+      //'field_related_department_program'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
+      'field_related_department_program'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
+      //'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
+      'field_related_people'=>array_map(fn($entity) => $entity->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
       'summary'=>$summary,
       'field_body'=> array('format'=>'plain_text','value'=>$summary)
       );
