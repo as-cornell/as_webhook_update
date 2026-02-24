@@ -14,11 +14,8 @@ use Drupal\Core\Path\AliasManager;
 function as_webhook_update_node_postinsert(EntityInterface $entity) {
 //variables
   $entity_types = array('article', 'person'); // only these node types
-  //$people_hosts = array('artsci-people.lndo.site','test-artsci-people.pantheonsite.io', 'people.as.cornell.edu'); // only these domains
   $event = 'create'; // action to perform
   $bundle = $entity->bundle();
-
-  
 
   if (in_array($bundle, $entity_types)) {
     $domain_schema = as_webhook_update_getdomainschema();
@@ -85,7 +82,6 @@ function as_webhook_update_node_postinsert(EntityInterface $entity) {
 function as_webhook_update_node_postupdate(EntityInterface $entity) {
   //variables
   $node_types = array('article', 'person'); // only these node types
-  //$people_hosts = array('artsci-people.lndo.site','test-artsci-people.pantheonsite.io', 'people.as.cornell.edu'); // only these domains
   $event = 'update'; // action to perform
   $bundle = $entity->bundle(); 
 
@@ -95,6 +91,7 @@ function as_webhook_update_node_postupdate(EntityInterface $entity) {
     // build data from fields specific to article
     if ($bundle == 'article') {
       $data = as_webhook_update_getarticledata($entity,$event);
+      // build media report entry data, currently disabled
       //$mediareportdata = as_webhook_update_getmediareportentrydata($entity,$event);
       // curl request to webhook listener
       if(!empty($data)){
@@ -103,7 +100,7 @@ function as_webhook_update_node_postupdate(EntityInterface $entity) {
         \Drupal::logger('as_webhook_update')
           ->info("The updated {$bundle} from " . __FUNCTION__ ." is nid {$entity->id()}, curl {$curl} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
         }
-      // curl request to mediareport webhook listener
+      // curl request to mediareport webhook listener, currently disabled
       // we don't want to update media report entries unless we're sure to preserve tagging
       //if(!empty($mediareportdata)){
         //$mediareportcurl = as_webhook_update_getcurl($mediareportdata,$domain_schema['mediareporturl']);
@@ -160,27 +157,25 @@ function as_webhook_update_taxonomy_term_postinsert(EntityInterface $entity) {
   if (in_array($bundle, $vocabularies)) {
     $domain_schema = as_webhook_update_getdomainschema();
     $data = array(
-        
-        'event'=>$event,
-        'type'=>'term',
-        'vocabulary' => $bundle,
-        'uuid'=>$entity->tid->value,
-        'status'=>$entity->status->value,
-        'title'=>$entity->name->value,
-        'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
-        'field_people_tid'=>$entity->tid->value,
-        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
-        'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_and_programs')->referencedEntities())
-
+      'event'=>$event,
+      'type'=>'term',
+      'vocabulary' => $bundle,
+      'uuid'=>$entity->tid->value,
+      'status'=>$entity->status->value,
+      'title'=>$entity->name->value,
+      'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
+      'field_people_tid'=>$entity->tid->value,
+      'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_and_programs')->referencedEntities())
       );
   $data = json_encode($data, JSON_UNESCAPED_SLASHES);
 
   $deptcurl = as_webhook_update_getcurl($domain_schema['deptpeopleurl']);
+  // not currently sent to AS
   //$ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
     // log transaction
     \Drupal::logger('as_webhook_update')
     ->info("The created {$bundle} taxonomy term from " . __FUNCTION__ ." is {$entity->name->value}, field_people_tid {$entity->tid->value} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
-    }
+  }
 
 }
 
@@ -195,27 +190,25 @@ function as_webhook_update_taxonomy_term_postupdate(EntityInterface $entity) {
   if (in_array($bundle, $vocabularies)) {
     $domain_schema = as_webhook_update_getdomainschema();
     $data = array(
-          
-          'event'=>$event,
-          'type'=>'term',
-          'vocabulary' => $bundle,
-          'uuid'=>$entity->tid->value,
-          'status'=>$entity->status->value,
-          'title'=>$entity->name->value,
-          'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
-          'field_people_tid'=>$entity->tid->value,
-          //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_and_programs)
-          'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_and_programs')->referencedEntities())
-
+      'event'=>$event,
+      'type'=>'term',
+      'vocabulary' => $bundle,
+      'uuid'=>$entity->tid->value,
+      'status'=>$entity->status->value,
+      'title'=>$entity->name->value,
+      'parent'=>reset(\Drupal::service('entity_type.manager')->getStorage("taxonomy_term")->loadParents($entity->tid->value))->id(),
+      'field_people_tid'=>$entity->tid->value,
+      'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_and_programs')->referencedEntities())
         );
     $data = json_encode($data, JSON_UNESCAPED_SLASHES);
 
-        $deptcurl = as_webhook_update_getcurl($data,$domain_schema['deptpeopleurl']);
-        //$ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
-        // log transaction
-          \Drupal::logger('as_webhook_update')
-            ->info("The updated {$bundle} taxonomy term from " . __FUNCTION__ ." is {$entity->name->value}, tid {$entity->tid->value} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
-    }
+    $deptcurl = as_webhook_update_getcurl($data,$domain_schema['deptpeopleurl']);
+    // not currently sent to AS
+    //$ascurl = as_webhook_update_getcurl($data,$domain_schema['aspeopleurl']);
+    // log transaction
+      \Drupal::logger('as_webhook_update')
+        ->info("The updated {$bundle} taxonomy term from " . __FUNCTION__ ." is {$entity->name->value}, tid {$entity->tid->value} <br>Data:<br>".json_encode($data, JSON_PRETTY_PRINT));
+  }
 
 }
 
@@ -234,7 +227,6 @@ function as_webhook_update_node_postdelete(EntityInterface $entity) {
   if (in_array($bundle, $node_types)) {
 
     // only send delete request from people
-    //if (in_array($host, $people_hosts)) {
     if ($domain_schema['schema'] == 'people') {
         $data = as_webhook_update_getpersondata($entity,$event);
         // curl requests
@@ -277,13 +269,17 @@ function as_webhook_update_getarticledata($entity,$event){
     $data = '';
     $body = '';
     $host = \Drupal::request()->getHost();
-    //$uuid = $entity->uuid->value;
-    //$title = $entity->title->value;
     if (!empty($entity->field_summary->value)){
       $summary = $entity->field_summary->value;
     }else{
       $summary = $title;
     }
+    
+    // body
+    if (!empty($entity->body->value)) {
+      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://'.$host.'/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->processed)));
+    }
+    
     // images
     foreach ($entity->field_image as $pireference) {
       $portrait_image_file = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
@@ -310,12 +306,6 @@ function as_webhook_update_getarticledata($entity,$event){
         $thumbnail_image_alt = $tireference->entity->field_media_image->alt;
         }
     }
-    
-    // body
-    // TODO render processed text in theme so media items get the right wrappers
-    if (!empty($entity->body->value)) {
-      $body = $body . trim(str_replace('/sites/default/files/styles/', 'https://'.$host.'/sites/default/files/styles/', preg_replace('/\s\s+/', '',$entity->body->processed)));
-    }
 
 
       // build article data array
@@ -326,19 +316,16 @@ function as_webhook_update_getarticledata($entity,$event){
         'status'=>$entity->status->value,
         'uid'=>'1',
         'title'=>$entity->title->value,
-        //'field_bylines'=>as_webhook_update_gettermname($entity->field_byline_reference),
         'field_bylines'=>$entity->get('field_byline_reference')->entity?->label(),
         'field_dateline'=>$entity->field_dateline->value,
-        //'field_media_sources'=>as_webhook_update_gettermname($entity->field_media_source_reference),
         'field_media_sources'=>$entity->get('field_media_source_reference')->entity?->label(),
         'field_external_media_source'=>$entity->field_external_media_source->value,
-        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
         'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
         'field_article_view_tags'=>'',
-        //'field_related_articles'=>as_webhook_update_getarticleuuiidstring($entity->field_related_articles),
         'field_related_articles'=>array_map(fn($entity) => $entity->uuid(), $entity->get('field_related_articles')->referencedEntities()),
-        //'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
         'field_related_people'=>array_map(fn($entity) => $entity->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
+        // for coming field update from field_related_people_nodes to field_related_people
+        //'field_related_people'=>array_map(fn($entity) => $entity->get('field_remote_uuid')->value, $entity->get('field_related_people')->referencedEntities()),
         'field_portrait_image_path'=>$portrait_image_path,
         'field_portrait_image_alt'=>$portrait_image_alt,
         'field_landscape_image_path'=>$landscape_image_path,
@@ -359,6 +346,17 @@ function as_webhook_update_getarticledata($entity,$event){
  * Implements as_webhook_update_getmediareportentrydata().
  */
 // build data from fields specific to media_report_entry
+  // build media_report_entry data array
+  // field_remote_uuid
+  // title
+  // field_outlet_name
+  // field_news_date
+  // field_news_link/uri
+  // field_related_department_program
+  // field_related_people
+  // field_media_report_public_cat
+  // summary
+  // body
 function as_webhook_update_getmediareportentrydata($entity,$event){
     $data = '';
     $host = \Drupal::request()->getHost();
@@ -367,17 +365,7 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
     }else{
       $summary = $title;
     }
-    // build media_report_entry data array
-    // field_remote_uuid
-    // title
-    // field_outlet_name
-    // field_news_date
-    // field_news_link/uri
-    // field_related_department_program
-    // field_related_people
-    // field_media_report_public_cat
-    // summary
-    // body
+
     $data = array(
       'event'=>$event,
       'type'=>'media_report_entry',
@@ -385,14 +373,10 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
       'status'=>$entity->status->value,
       'uid'=>'1',
       'title'=>$entity->title->value,
-      //'field_outlet_name'=>as_webhook_update_gettermname($entity->field_media_source_reference),
       'field_outlet_name'=>$entity->get('field_media_source_reference')->entity?->label(),
       'field_news_date'=>$entity->field_dateline->value,
       'field_news_link'=>'https://'.$host.'/node/'.$entity->nid->value,
-      //'field_external_media_source'=>$entity->field_external_media_source->value,
-      //'field_related_department_program'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
       'field_related_department_program'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
-      //'field_related_people'=>as_webhook_update_getpersonuuiidstring($entity->field_related_people_nodes),
       'field_related_people'=>array_map(fn($entity) => $entity->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
       'summary'=>$summary,
       'field_body'=> array('format'=>'plain_text','value'=>$summary)
@@ -410,12 +394,12 @@ function as_webhook_update_getmediareportentrydata($entity,$event){
 // build data from fields specific to person
 function as_webhook_update_getpersondata($entity,$event){
     $data = '';
-    $uuid = $entity->uuid->value;
-    $title = $entity->title->value;
     if (!empty($entity->field_summary->entity->field_description->value)){
-      $summary = as_webhook_update_getsummary($entity->field_summary->entity->field_description->value);
+      //$summary = $entity->field_summary->entity->field_description->value;
+      //$summary = str_replace('&nbsp;', '',str_replace('"', '', str_replace('<p>', '', str_replace('<p/>', '', $summary))));
+      $summary = trim(preg_replace('/\s\s+/', '', $entity->field_description->value));
     }else{
-      $summary = $title;
+      $summary = 'Directory record for ' . $entity->title->value;
     }
     $overviewresearch = [];
     $body = '';
@@ -425,7 +409,6 @@ function as_webhook_update_getpersondata($entity,$event){
     
     
     // separate overview and research if there are multiples
-    // TODO test for multiples else provide single in body
     if (!empty($entity->field_summary)){
       foreach ($entity->field_summary as $key => $summary_entity) {
         // Code to execute for each element's value
@@ -461,14 +444,6 @@ function as_webhook_update_getpersondata($entity,$event){
 
     }
     // mash up body
-    // overview from profiles with single overview - moved to overview_research
-    //if (!empty($entity->field_summary->entity->field_description->value)){
-      //$body = '<h3>Overview</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_description->value));
-      //}
-    // research focus from profiles with single overview - moved to overview_research
-    //if (!empty($entity->field_summary->entity->field_person_research_focus->value)){
-       //$body =  $body . '<h3>Research Focus</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_summary->entity->field_person_research_focus->value));
-      //}
     if (!empty($entity->field_awards_and_honors->value)){
       $body =  $body . '<h3>Awards and Honors</h3>' . trim(preg_replace('/\s\s+/', '', $entity->field_awards_and_honors->value));
       }
@@ -523,7 +498,6 @@ function as_webhook_update_getpersondata($entity,$event){
     array_push($bodyformat, 'full_html');
     }
 
-
     // education
     if (!empty($entity->field_person_education->value)){
       $education =  trim(preg_replace('/\s\s+/', '', $entity->field_person_education->value));
@@ -532,37 +506,32 @@ function as_webhook_update_getpersondata($entity,$event){
     if (!empty($entity->field_keywords->value)){
       $keywords =  trim(preg_replace('/\s\s+/', '', $entity->field_keywords->value));
       }
-    // links
-    if (!empty($entity->field_links)){
-      $links =  $entity->field_links;
-      }
+    // images
     if (!empty($entity->field_image)) {
       foreach ($entity->field_image as $pireference) {
         //$portrait_image_path = ltrim($pireference->entity->field_media_image->entity->getFileUri(), 'public://');
         if (!empty($pireference->entity->field_media_image->entity)) {
           $portrait_image_path = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
           $portrait_image_path = 'https://people.as.cornell.edu/sites/default/files/styles/person_image/'.$portrait_image_path;
-          }
         }
-        
+      }   
     }else{
         $portrait_image_path = 'https://people.as.cornell.edu/sites/default/files/default_images/Klarman.jpg';
     }
 
-    // primary college
-     if (!empty($entity->field_primary_college->entity->name->value)){
-      $primarycollege =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_college->entity->name->value));
-      }else{
-        $primarycollege = '';
+    // links
+    $linkuris = '';
+    $linktitles = '';
+    if (!empty($entity->field_links)) {
+      foreach ($entity->field_links as $link) {
+        $linkuris = $linkuris .','. $link->uri;
+        $linktitles = $linktitles .','. $link->title;
+        $links[] = array('uri'=>$link->uri,'title'=>$link->title);
       }
-    // primary department
-     if (!empty($entity->field_primary_department->entity->name->value)){
-      $primarydepartment =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_department->entity->name->value));
-      }else{
-        $primarydepartment = '';
-      }
-
-
+      $linkuris = ltrim($linkuris, ',');
+      $linktitles = ltrim($linktitles, ','); 
+    }
+    
     // build person data array
     $data = array(
         'event'=>$event,
@@ -574,22 +543,18 @@ function as_webhook_update_getpersondata($entity,$event){
         'netid'=>$entity->field_person_netid->value,
         'field_person_last_name'=>$entity->field_person_last_name->value,
         'field_job_title'=>$entity->field_person_title->value,
-        //'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
         'field_person_type'=>$entity->get('field_person_type')->entity?->label(),
-        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
         'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
-        //'field_primary_department'=>$primarydepartment,
         'field_primary_department'=>$entity->get('field_primary_department')->entity?->label(),
         'field_portrait_image_path'=>$portrait_image_path,
-        //'field_academic_role'=>as_webhook_update_gettidstring($entity->field_academic_role),
         'field_academic_role'=> array_column($entity->get('field_academic_role')->getValue(), 'target_id'),
-        //'field_research_areas'=>as_webhook_update_gettidstring($entity->field_research_areas),
         'field_research_areas'=> array_column($entity->get('field_research_areas')->getValue(), 'target_id'),
-        //'field_academic_interests'=>as_webhook_update_gettidstring($entity->field_academic_interests),
         'field_academic_interests'=> array_column($entity->get('field_academic_interests')->getValue(), 'target_id'),
-        //'field_links'=>$entity->field_links,
-        'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
-        'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
+        'field_links_new'=>$links,
+        //'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
+        'field_links'=>$linkuris,
+        //'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
+        'field_links_titles'=>$linktitles,
         'field_summary'=>$summary,
         'field_education'=>array('format'=>$entity->field_person_education->format,'value'=>$education),
         'field_keywords'=>array('format'=>$entity->field_keywords->format,'value'=>$keywords),
@@ -598,9 +563,7 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_as_directory'=>$entity->field_as_directory->value,
         'field_hide_contact_info'=>$entity->field_hide_contact_info->value,
         'field_exclude_directory'=>$entity->field_exclude_directory->value,
-        //'field_primary_college'=>$primarycollege,
         'field_primary_college'=>$entity->get('field_primary_college')->entity?->label(),
-        //'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
         'field_affiliated_colleges'=>array_map(fn($term) => $term->label(), $entity->get('field_affiliated_colleges')->referencedEntities())
 
       );
@@ -614,32 +577,19 @@ function as_webhook_update_getpersondata($entity,$event){
 /**
  * Implements as_webhook_update_getmediareportpersondata().
  */
-// build data from fields specific to person
+// build data from fields specific to person on artsci-mediareport.
+  // build media_report_person data array
+  // field_people_uuid
+  // title
+  // field_netid
+  // field_person_last_name
+  // field_person_type
+  // field_departments_programs/id
+  // field_link/uri
+
 function as_webhook_update_getmediareportpersondata($entity,$event){
     $data = '';
     $host = \Drupal::request()->getHost();
-    // primary college
-    if (!empty($entity->field_primary_college->entity->name->value)){
-      $primarycollege =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_college->entity->name->value));
-    }else{
-      $primarycollege = '';
-    }
-    // primary department
-    if (!empty($entity->field_primary_department->entity->name->value)){
-      $primarydepartment =  trim(preg_replace('/\s\s+/', '', $entity->field_primary_department->entity->name->value));
-    }else{
-      $primarydepartment = '';
-    }
-
-    // build media_report_person data array
-    // field_people_uuid
-    // title
-    // field_netid
-    // field_person_last_name
-    // field_person_type
-    // field_departments_programs/id
-    // field_link/uri
-    
     $data = array(
         'event'=>$event,
         'type'=>'media_report_person',
@@ -649,18 +599,12 @@ function as_webhook_update_getmediareportpersondata($entity,$event){
         'title'=>$entity->title->value,
         'netid'=>$entity->field_person_netid->value,
         'field_person_last_name'=>$entity->field_person_last_name->value,
-        //'field_person_type'=>as_webhook_update_gettermname($entity->field_person_type),
         'field_person_type'=>$entity->get('field_person_type')->entity?->label(),
-        //'field_departments_programs'=>as_webhook_update_gettermnamestring($entity->field_departments_programs),
         'field_departments_programs'=>array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
-        //'field_primary_department'=>$primarydepartment,
         'field_primary_department'=>$entity->get('field_primary_department')->entity?->label(),
         'field_link'=>'https://'.$host.'/node/'.$entity->nid->value,
-        //'field_primary_college'=>$primarycollege,
         'field_primary_college'=>$entity->get('field_primary_college')->entity?->label(),
-        //'field_affiliated_colleges'=>as_webhook_update_gettermnamestring($entity->field_affiliated_colleges)
         'field_affiliated_colleges'=>array_map(fn($term) => $term->label(), $entity->get('field_affiliated_colleges')->referencedEntities())
-
       );
 
     $data = json_encode($data, JSON_UNESCAPED_SLASHES);
@@ -695,148 +639,6 @@ function as_webhook_update_getcurl($data,$url){
     \Drupal::logger('as_webhook_update')
     ->info("curl request was made by {$host} " . __FUNCTION__." to {$url}, result ".json_encode($result, JSON_PRETTY_PRINT).",http code ".json_encode($httpcode, JSON_PRETTY_PRINT).",<br>data:<br>".json_encode($data, JSON_PRETTY_PRINT));
     
-}
-
-
-/**
- * Implements as_webhook_update_getsummary().
- */
-function as_webhook_update_getsummary($summary){
-    $summary = substr($summary,0, strpos($summary, "</p>")+4);
-    $summary = str_replace('&nbsp;', '',str_replace('"', '', str_replace('<p>', '', str_replace('<p/>', '', $summary))));
-    //$summary = str_replace('"', $summary);
-    $summary = strip_tags($summary);
-    return $summary;
-}
-
-/**
- * Implements as_webhook_update_getbody().
- */
-function as_webhook_update_getbody($body){
-    $bodyencode['format'] = 'full_html';
-    $bodyencode['value'] = trim(preg_replace('/\s\s+/', '',$body));
-    $body = json_encode($bodyencode, JSON_UNESCAPED_SLASHES);
-    return $body;
-}
-
-
-/**
- * Implements as_webhook_update_gettid().
- */
-function as_webhook_update_gettid($fielddata){
-    $tid = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $termreference) {
-        $tid = $termreference->entity->tid->value;
-      }
-    }
-    return $tid;
-}
-
-/**
- * Implements as_webhook_update_gettermname().
- */
-function as_webhook_update_gettermname($fielddata){
-    $termname = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $termreference) {
-        $termname= $termreference->entity->name->value;
-      }
-    }
-    return $termname;
-}
-
-
-/**
- * Implements as_webhook_update_gettidstring().
- */
-function as_webhook_update_gettidstring($fielddata){
-    $tidstring = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $termreference) {
-        $tidstring = $tidstring .','. $termreference->entity->tid->value;
-      }
-      $tidstring = ltrim($tidstring, ',');
-    }
-    return $tidstring;
-}
-
-
-/**
- * Implements as_webhook_update_gettermnamestring().
- */
-function as_webhook_update_gettermnamestring($fielddata){
-    $termnamestring = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $termreference) {
-        $termnamestring = $termnamestring .'|'. $termreference->entity->name->value;
-      }
-
-      $termnamestring = ltrim($termnamestring, '|');
-    }
-    return $termnamestring;
-}
-
-
-/**
- * Implements as_webhook_update_getpersonuuidstring().
- */
-function as_webhook_update_getpersonuuiidstring($fielddata){
-    $uuidstring = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $entityreference) {
-        // change to field_remote_uuid after switching related people to nodes
-        $uuidstring = $uuidstring .','. $entityreference->entity->field_remote_uuid->value;
-      }
-    $uuidstring = ltrim($uuidstring, ',');
-    }
-    return $uuidstring;
-}
-
-
-/**
- * Implements as_webhook_update_getarticleuuidstring().
- */
-function as_webhook_update_getarticleuuiidstring($fielddata){
-    $uuidstring = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $entityreference) {
-        $uuidstring = $uuidstring .','. $entityreference->entity->uuid->value;
-      }
-      $uuidstring = ltrim($uuidstring, ',');
-    }
-    return $uuidstring;
-}
-
-
-/**
- * Implements as_webhook_update_getpersonlinks().
- */
-function as_webhook_update_getpersonlinks($fielddata){
-    $links = '';
-    if (!empty($fielddata)) {
-      foreach ($fielddata as $link) {
-        $links = $links .','. $link->uri;
-        //$links[] = array('uri'=>$link->uri,'title'=>$link->title);
-      }
-      $links = ltrim($links, ',');
-    }
-    return $links;
-}
-
-/**
- * Implements as_webhook_update_getpersonlinktitles().
- */
-function as_webhook_update_getpersonlinktitles($fielddata){
-    $titles = '';
-    if (!empty($fielddata)) {
-      
-    foreach ($fielddata as $title) {
-      $titles = $titles .','. $title->title;
-      }
-      $titles = ltrim($titles, ',');
-    }
-    return $titles;
 }
 
 /**
