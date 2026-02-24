@@ -520,16 +520,17 @@ function as_webhook_update_getpersondata($entity,$event){
     }
 
     // links
-    $linkuris = '';
-    $linktitles = '';
+    $links = [];
+    //$linkuris = '';
+    //$linktitles = '';
     if (!empty($entity->field_links)) {
       foreach ($entity->field_links as $link) {
-        $linkuris = $linkuris .','. $link->uri;
-        $linktitles = $linktitles .','. $link->title;
+        //$linkuris = $linkuris .','. $link->uri;
+        //$linktitles = $linktitles .','. $link->title;
         $links[] = array('uri'=>$link->uri,'title'=>$link->title);
       }
-      $linkuris = ltrim($linkuris, ',');
-      $linktitles = ltrim($linktitles, ','); 
+      //$linkuris = ltrim($linkuris, ',');
+      //$linktitles = ltrim($linktitles, ','); 
     }
     
     // build person data array
@@ -550,11 +551,11 @@ function as_webhook_update_getpersondata($entity,$event){
         'field_academic_role'=> array_column($entity->get('field_academic_role')->getValue(), 'target_id'),
         'field_research_areas'=> array_column($entity->get('field_research_areas')->getValue(), 'target_id'),
         'field_academic_interests'=> array_column($entity->get('field_academic_interests')->getValue(), 'target_id'),
-        'field_links_new'=>$links,
+        'field_links'=>$links,
         //'field_links'=>as_webhook_update_getpersonlinks($entity->field_links),
-        'field_links'=>$linkuris,
+        //'field_links'=>$linkuris,
         //'field_links_titles'=>as_webhook_update_getpersonlinktitles($entity->field_links),
-        'field_links_titles'=>$linktitles,
+        //'field_links_titles'=>$linktitles,
         'field_summary'=>$summary,
         'field_education'=>array('format'=>$entity->field_person_education->format,'value'=>$education),
         'field_keywords'=>array('format'=>$entity->field_keywords->format,'value'=>$keywords),
