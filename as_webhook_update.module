@@ -526,7 +526,7 @@ function as_webhook_update_getpersondata($entity,$event){
       foreach ($entity->field_links as $link) {
         $linkuris = $linkuris .','. $link->uri;
         $linktitles = $linktitles .','. $link->title;
-        $links[] = array('uri'=>$link->uri,'title'=>$link->title);
+        //$links[] = array('uri'=>$link->uri,'title'=>$link->title);
       }
       $linkuris = ltrim($linkuris, ',');
       $linktitles = ltrim($linktitles, ','); 
