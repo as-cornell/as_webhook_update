@@ -4,6 +4,7 @@ namespace Drupal\as_webhook_update\DataExtractor;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Component\Utility\Html;
+use Drupal\Component\Utility\Unicode;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -55,6 +56,39 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
   }
 
   /**
+   * Intelligently truncates text to a maximum length.
+   *
+   * Attempts to truncate at sentence boundaries first, then word boundaries.
+   *
+   * @param string $text
+   *   The text to truncate.
+   * @param int $max_length
+   *   Maximum length in characters (default: 500).
+   *
+   * @return string
+   *   The truncated text with ellipsis if truncated.
+   */
+  protected function smartTruncate(string $text, int $max_length = 500): string {
+    // If already short enough, return as-is.
+    if (mb_strlen($text) <= $max_length) {
+      return $text;
+    }
+
+    // Try to find a sentence boundary within the max length.
+    $truncated = mb_substr($text, 0, $max_length);
+
+    // Look for sentence endings: period, exclamation, question mark.
+    if (preg_match('/^(.+[.!?])\s/', $truncated, $matches)) {
+      return trim($matches[1]);
+    }
+
+    // No sentence boundary found, truncate at word boundary.
+    $truncated = Unicode::truncate($text, $max_length, TRUE, TRUE);
+
+    return $truncated;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function extract(EntityInterface $entity, string $event): string {
@@ -65,6 +99,8 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
       $summary = Html::decodeEntities(strip_tags($summary));
       // Remove extra whitespace.
       $summary = trim(preg_replace('/\s+/', ' ', $summary));
+      // Intelligently truncate to max 500 characters.
+      $summary = $this->smartTruncate($summary, 500);
     }
     else {
       $summary = 'Directory record for ' . $entity->title->value;
