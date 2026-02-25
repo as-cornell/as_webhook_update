@@ -1,0 +1,66 @@
+services:
+  # Logger channel for webhook updates
+  logger.channel.as_webhook_update:
+    parent: logger.channel_base
+    arguments: ['as_webhook_update']
+
+  # Value Object - WebhookDestination (not a service, but defined for clarity)
+
+  # Core Services
+  as_webhook_update.http_client:
+    class: Drupal\as_webhook_update\Service\HttpClientService
+    arguments:
+      - '@key.repository'
+      - '@logger.channel.as_webhook_update'
+
+  as_webhook_update.destination_resolver:
+    class: Drupal\as_webhook_update\Service\DestinationResolverService
+    arguments:
+      - '@request_stack'
+      - '@config.factory'
+
+  as_webhook_update.person_type_routing:
+    class: Drupal\as_webhook_update\Service\PersonTypeRoutingService
+
+  # Data Extractors (tagged services for factory pattern)
+  as_webhook_update.extractor.article:
+    class: Drupal\as_webhook_update\DataExtractor\ArticleDataExtractor
+    arguments:
+      - '@request_stack'
+    tags:
+      - { name: as_webhook_update.entity_extractor }
+
+  as_webhook_update.extractor.person:
+    class: Drupal\as_webhook_update\DataExtractor\PersonDataExtractor
+    arguments:
+      - '@request_stack'
+    tags:
+      - { name: as_webhook_update.entity_extractor }
+
+  as_webhook_update.extractor.media_report_person:
+    class: Drupal\as_webhook_update\DataExtractor\MediaReportPersonDataExtractor
+    arguments:
+      - '@request_stack'
+    tags:
+      - { name: as_webhook_update.entity_extractor }
+
+  as_webhook_update.extractor.taxonomy_term:
+    class: Drupal\as_webhook_update\DataExtractor\TaxonomyTermDataExtractor
+    tags:
+      - { name: as_webhook_update.entity_extractor }
+
+  # Factory
+  as_webhook_update.extractor_factory:
+    class: Drupal\as_webhook_update\Factory\EntityExtractorFactory
+    arguments:
+      - !tagged_iterator as_webhook_update.entity_extractor
+
+  # Main Dispatcher Service
+  as_webhook_update.dispatcher:
+    class: Drupal\as_webhook_update\Service\WebhookDispatcherService
+    arguments:
+      - '@as_webhook_update.extractor_factory'
+      - '@as_webhook_update.destination_resolver'
+      - '@as_webhook_update.http_client'
+      - '@as_webhook_update.person_type_routing'
+      - '@logger.channel.as_webhook_update'
