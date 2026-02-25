@@ -3,6 +3,7 @@
 namespace Drupal\as_webhook_update\DataExtractor;
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Component\Utility\Html;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -57,9 +58,13 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
    * {@inheritdoc}
    */
   public function extract(EntityInterface $entity, string $event): string {
-    // Summary.
+    // Summary - strip all HTML tags and decode entities for plain text.
     if (!empty($entity->field_summary->entity->field_description->value)) {
       $summary = $entity->field_summary->entity->field_description->value;
+      // Strip HTML tags and decode HTML entities to get plain text.
+      $summary = Html::decodeEntities(strip_tags($summary));
+      // Remove extra whitespace.
+      $summary = trim(preg_replace('/\s+/', ' ', $summary));
     }
     else {
       $summary = 'Directory record for ' . $entity->title->value;
