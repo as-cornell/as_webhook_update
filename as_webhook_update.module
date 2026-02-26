@@ -12,14 +12,14 @@
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Implements hook_ENTITY_TYPE_postinsert().
+ * Implements hook_ENTITY_TYPE_postinsert() for nodes.
  */
 function as_webhook_update_node_postinsert(EntityInterface $entity) {
   \Drupal::service('as_webhook_update.dispatcher')->dispatch($entity, 'create');
 }
 
 /**
- * Implements hook_ENTITY_TYPE_postupdate().
+ * Implements hook_ENTITY_TYPE_postupdate() for nodes.
  */
 function as_webhook_update_node_postupdate(EntityInterface $entity) {
   \Drupal::service('as_webhook_update.dispatcher')->dispatch($entity, 'update');
@@ -42,7 +42,7 @@ function as_webhook_update_taxonomy_term_postupdate(EntityInterface $entity) {
 }
 
 /**
- * Implements hook_ENTITY_TYPE_postdelete().
+ * Implements hook_ENTITY_TYPE_postdelete() for nodes.
  */
 function as_webhook_update_node_postdelete(EntityInterface $entity) {
   \Drupal::service('as_webhook_update.dispatcher')->dispatch($entity, 'delete');
