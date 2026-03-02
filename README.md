@@ -5,7 +5,7 @@
 
 Provides a webhook notification service that sends entity changes (articles, people, taxonomy terms) to remote systems via HTTP webhooks. Uses an OOP architecture with services, extractors, and dependency injection for maintainability and testability.
 
-![Carrier Takeoff](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHZhcTVlMXdlanY0bWc1cWtlejVha3Zhc2hhdnplNG5iZjZzejR1dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MahFJeuuCBGvoj2OHF/giphy.gif "send it")
+![Takeoff](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3A4eXVjZGpncnQyeDlndzI2ZWdycjZudHlucGxuOGVhMTNtZWwwMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SYWnRxV7gS1x8WTjo6/giphy.gif "send it")
 
 ## REQUIREMENTS
 
