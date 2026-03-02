@@ -3,9 +3,10 @@
 
 ## INTRODUCTION
 
-Provides a webhook notification service that sends entity changes (articles, people, taxonomy terms) to remote systems via HTTP webhooks. Uses an OOP architecture with services, extractors, and dependency injection for maintainability and testability.
-
 ![Takeoff](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExb3A4eXVjZGpncnQyeDlndzI2ZWdycjZudHlucGxuOGVhMTNtZWwwMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SYWnRxV7gS1x8WTjo6/giphy.gif "send it")
+
+
+Provides a webhook notification service that sends entity changes (articles, people, taxonomy terms) to remote systems via HTTP webhooks. Uses an OOP architecture with services, extractors, and dependency injection for maintainability and testability.
 
 ## REQUIREMENTS
 
