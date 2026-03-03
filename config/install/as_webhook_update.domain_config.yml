@@ -17,6 +17,22 @@ local:
       articlesurl: 'http://artsci-departments.lndo.site/webhook-entities/listener'
       mediareporturl: 'http://artsci-mediareport.lndo.site/webhook-entities/listener'
 
+# Dev Environment (Pantheon)
+dev:
+  people:
+    domain: 'dev-artsci-people.pantheonsite.io'
+    schema: 'people'
+    urls:
+      deptpeopleurl: 'https://dev-artsci-departments.pantheonsite.io/webhook-entities/listener'
+      aspeopleurl: 'https://dev-artsci-as.pantheonsite.io/webhook-entities/listener'
+      mediareporturl: 'https://dev-artsci-mediareport.pantheonsite.io/webhook-entities/listener'
+  as:
+    domain: 'dev-artsci-as.pantheonsite.io'
+    schema: 'as'
+    urls:
+      articlesurl: 'https://dev-artsci-departments.pantheonsite.io/webhook-entities/listener'
+      mediareporturl: 'https://dev-artsci-mediareport.pantheonsite.io/webhook-entities/listener'
+
 # Test Environment (Pantheon)
 test:
   people:
@@ -48,22 +64,6 @@ production:
     urls:
       articlesurl: 'https://departments.as.cornell.edu/webhook-entities/listener'
       mediareporturl: 'https://mediareport.as.cornell.edu/webhook-entities/listener'
-
-# Dev Environment (Pantheon) - using same as test for now
-dev:
-  people:
-    domain: 'dev-artsci-people.pantheonsite.io'
-    schema: 'people'
-    urls:
-      deptpeopleurl: 'https://test-artsci-departments.pantheonsite.io/webhook-entities/listener'
-      aspeopleurl: 'https://test-artsci-as.pantheonsite.io/webhook-entities/listener'
-      mediareporturl: 'https://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener'
-  as:
-    domain: 'dev-artsci-as.pantheonsite.io'
-    schema: 'as'
-    urls:
-      articlesurl: 'https://test-artsci-departments.pantheonsite.io/webhook-entities/listener'
-      mediareporturl: 'https://test-artsci-mediareport.pantheonsite.io/webhook-entities/listener'
 
 # Live Environment (Pantheon) - same as production
 live:
