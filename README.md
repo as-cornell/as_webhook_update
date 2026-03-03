@@ -46,7 +46,7 @@ Provides a webhook notification service that sends entity changes (articles, peo
 
 ### Upgrading from Previous Version
 
-**IMPORTANT:** If you're upgrading from the procedural version to the OOP version, you must manually import the domain configuration:
+**IMPORTANT:** If you're upgrading from the procedural version to the OOP version, you must manually import the domain configuration.  You will need to set up the relationship between domains as fits your use case:
 
 1. **Clear cache:**
    ```bash
@@ -61,6 +61,16 @@ Provides a webhook notification service that sends entity changes (articles, peo
    Or if using Lando:
    ```bash
    lando drush config:import --partial --source=/app/web/modules/custom/as_webhook_update/config/install -y
+   ```
+
+   Or if on Pantheon (adapt pattern as appropriate):
+   ```bash
+   terminus remote:drush artsci-as.dev -- config:import --partial --source=modules/custom/as_webhook_update/config/install -y
+   terminus remote:drush artsci-people.dev -- config:import --partial --source=modules/custom/as_webhook_update/config/install -y
+   terminus remote:drush artsci-as.test -- config:import --partial --source=modules/custom/as_webhook_update/config/install -y
+   terminus remote:drush artsci-people.test -- config:import --partial --source=modules/custom/as_webhook_update/config/install -y
+   terminus remote:drush artsci-as.live -- config:import --partial --source=modules/custom/as_webhook_update/config/install -y
+   terminus remote:drush artsci-people.live -- config:import --partial --source=modules/custom/as_webhook_update/config/install -y
    ```
 
 3. **Verify the config was imported:**
