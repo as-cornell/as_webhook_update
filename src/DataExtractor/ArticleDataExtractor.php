@@ -156,6 +156,7 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
       'field_departments_programs' => array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
       'field_article_view_tags' => '',
       'field_related_articles' => array_map(fn($entity) => $entity->uuid(), $entity->get('field_related_articles')->referencedEntities()),
+      'field_related_disciplines' => array_map(fn($term) => $term->label(), $entity->get('field_related_disciplines')->referencedEntities()),
       'field_related_people' => ($people = array_map(fn($e) => $e->get('field_remote_uuid')->value, $entity->get('field_related_people')->referencedEntities())) 
         ? $people 
         : array_map(fn($e) => $e->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
