@@ -86,7 +86,7 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
       if (!empty($pireference->entity->field_media_image->entity)) {
         $portrait_image_file = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
         $portrait_image_path = 'https://' . $host . '/sites/default/files/styles/4_5/' . $portrait_image_file;
-        $portrait_image_alt = $pireference->entity->field_media_image->alt;
+        $portrait_image_alt = $pireference->entity->field_media_image?->alt;
       }
     }
 
@@ -98,10 +98,20 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
         if (!empty($lireference->entity->field_media_image->entity)) {
           $landscape_image_file = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity->getFileUri());
           $landscape_image_path = 'https://' . $host . '/sites/default/files/styles/6_4_large/' . $landscape_image_file;
-          $landscape_image_alt = $lireference->entity->field_media_image->alt;
+          $landscape_image_alt = $lireference->entity->field_media_image?->alt;
         }
       }
     }
+    if (!empty($entity->field_landscape_image)) {
+      foreach ($entity->field_landscape_image as $lireference) {
+        if (!empty($lireference->entity->field_media_image->entity)) {
+          $landscape_image_file = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity->getFileUri());
+          $landscape_image_path = 'https://' . $host . '/sites/default/files/styles/6_4_large/' . $landscape_image_file;
+          $landscape_image_alt = $lireference->entity->field_media_image?->alt;
+        }
+      }
+    }
+
 
     // Set default thumbnail image, overwrite if there's data.
     $thumbnail_image_path = 'https://' . $host . '/sites/default/files/styles/1_1_thumbnail/' . $portrait_image_file;
@@ -111,34 +121,54 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
         if (!empty($tireference->entity->field_media_image->entity)) {
           $thumbnail_image_file = str_replace('public://', 'public/', $tireference->entity->field_media_image->entity->getFileUri());
           $thumbnail_image_path = 'https://' . $host . '/sites/default/files/styles/1_1_thumbnail/' . $thumbnail_image_file;
-          $thumbnail_image_alt = $tireference->entity->field_media_image->alt;
+          $thumbnail_image_alt = $tireference->entity->field_media_image?->alt;
         }
       }
     }
+
+    // Set pano image if there's data
+    $pano_image_path = '';
+    $pano_image_alt = '';
+    if (!empty($entity->field_pano_image)) {
+      foreach ($entity->field_pano_image as $pireference) {
+        if (!empty($pireference->entity->field_media_image->entity)) {
+          $pano_image_file = str_replace('public://', 'public/', $pireference->entity->field_media_image->entity->getFileUri());
+          $pano_image_path = 'https://' . $host . '/sites/default/files/styles/pano/' . $pano_image_file;
+          $pano_image_alt = $pireference->entity->field_media_image?->alt;
+        }
+      }
+    }
+
 
     // Build article data array.
     $data = [
       'event' => $event,
       'type' => 'article',
-      'uuid' => $entity->uuid->value,
-      'status' => $entity->status->value,
+      'uuid' => $entity->uuid?->value,
+      'status' => $entity->status?->value,
       'uid' => '1',
-      'title' => $entity->title->value,
+      'title' => $entity->title?->value,
       'field_bylines' => $entity->get('field_byline_reference')->entity?->label(),
-      'field_dateline' => $entity->field_dateline->value,
+      'field_card_label' => $entity->field_card_label?->value,
+      'field_dateline' => $entity->field_dateline?->value,
       'field_media_sources' => $entity->get('field_media_source_reference')->entity?->label(),
-      'field_external_media_source' => $entity->field_external_media_source->value,
+      'field_external_media_source' => $entity->field_external_media_source?->value,
       'field_departments_programs' => array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
       'field_article_view_tags' => '',
       'field_related_articles' => array_map(fn($entity) => $entity->uuid(), $entity->get('field_related_articles')->referencedEntities()),
-      'field_related_people' => array_map(fn($entity) => $entity->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
+      'field_related_people' => ($people = array_map(fn($e) => $e->get('field_remote_uuid')->value, $entity->get('field_related_people')->referencedEntities())) 
+        ? $people 
+        : array_map(fn($e) => $e->get('field_remote_uuid')->value, $entity->get('field_related_people_nodes')->referencedEntities()),
       'field_portrait_image_path' => $portrait_image_path,
       'field_portrait_image_alt' => $portrait_image_alt,
       'field_landscape_image_path' => $landscape_image_path,
       'field_landscape_image_alt' => $landscape_image_alt,
       'field_thumbnail_image_path' => $thumbnail_image_path,
       'field_thumbnail_image_alt' => $thumbnail_image_alt,
+      'field_pano_image_path' => $pano_image_path,
+      'field_pano_image_alt' => $pano_image_alt,
       'field_page_summary' => $summary,
+      'field_summary' => $summary,
       'field_body' => ['format' => 'full_html', 'value' => $body],
     ];
 
