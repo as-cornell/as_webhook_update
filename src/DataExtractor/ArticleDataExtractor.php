@@ -93,15 +93,6 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
     // Set default landscape image, overwrite if there's data.
     $landscape_image_path = 'https://' . $host . '/sites/default/files/styles/6_4_large/' . $portrait_image_file;
     $landscape_image_alt = $portrait_image_alt;
-    if (!empty($entity->field_newsletter_image)) {
-      foreach ($entity->field_newsletter_image as $lireference) {
-        if (!empty($lireference->entity->field_media_image->entity)) {
-          $landscape_image_file = str_replace('public://', 'public/', $lireference->entity->field_media_image->entity?->getFileUri() ?? '');
-          $landscape_image_path = 'https://' . $host . '/sites/default/files/styles/6_4_large/' . $landscape_image_file;
-          $landscape_image_alt = $lireference->entity->field_media_image?->alt;
-        }
-      }
-    }
     if (!empty($entity->field_landscape_image)) {
       foreach ($entity->field_landscape_image as $lireference) {
         if (!empty($lireference->entity->field_media_image->entity)) {
