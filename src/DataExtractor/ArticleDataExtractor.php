@@ -143,7 +143,7 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
       'field_media_sources' => $entity->get('field_media_source_reference')->entity?->label(),
       'field_external_media_source' => $entity->field_external_media_source?->value,
       'field_departments_programs' => array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')?->referencedEntities() ?? []),
-      'field_article_view_tags' => '',
+      'field_tags' => array_map(fn($term) => $term->label(), $entity->get('field_tags')?->referencedEntities() ?? []),
       'field_related_articles' => array_map(fn($entity) => $entity->uuid(), $entity->get('field_related_articles')->referencedEntities() ?? []),
       'field_related_disciplines' => array_map(fn($term) => $term->label(), $entity->get('field_related_disciplines')?->referencedEntities() ?? [] ),
       'field_related_people' => array_map(fn($e) => $e->get('field_remote_uuid')->value, $entity->get('field_related_people')?->referencedEntities() ?? []),
@@ -155,7 +155,6 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
       'field_thumbnail_image_alt' => $thumbnail_image_alt,
       'field_pano_image_path' => $pano_image_path,
       'field_pano_image_alt' => $pano_image_alt,
-      'field_page_summary' => $summary,
       'field_summary' => $summary,
       'field_body' => ['format' => 'full_html', 'value' => $body],
     ];
