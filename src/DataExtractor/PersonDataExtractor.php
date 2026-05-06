@@ -110,13 +110,10 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
     $overviewresearch = [];
     if (!empty($entity->field_summary)) {
       foreach ($entity->field_summary as $key => $summary_entity) {
-        // Get comma separated list of departments for each overview.
-        $deptslist = '';
-        if (!empty($summary_entity->entity->field_departments_programs)) {
-          foreach ($summary_entity->entity->field_departments_programs as $dept_entity) {
-            $deptslist = $deptslist . $dept_entity->entity->name->value . '|';
-          }
-        }
+        $depts = array_map(
+          fn($d) => $d->entity->name->value,
+          iterator_to_array($summary_entity->entity->field_departments_programs ?? [])
+        );
 
         // Determine format (MathJax vs full_html).
         $overviewresearchformat = [];
@@ -136,7 +133,7 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
         }
 
         $overviewresearch[$key] = [
-          'departments_programs' => explode('|', $deptslist),
+          'departments_programs' => $depts,
           'overview' => $summary_entity->entity->field_description->value,
           'research' => $summary_entity->entity->field_person_research_focus->value,
           'format' => $format,
