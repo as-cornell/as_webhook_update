@@ -134,6 +134,7 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
       'event' => $event,
       'type' => 'article',
       'uuid' => $entity->uuid?->value,
+      'created' => $entity->getCreatedTime(),
       'status' => $entity->status?->value,
       'uid' => '1',
       'title' => $entity->title?->value,
