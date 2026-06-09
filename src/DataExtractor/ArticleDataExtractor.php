@@ -57,7 +57,7 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
    */
   public function extract(EntityInterface $entity, string $event): string {
     $host = $this->requestStack->getCurrentRequest()->getHost();
-    $title = $entity->title->value;
+    $title = trim($entity->title->value ?? '');
 
     // Summary.
     if (!empty($entity->field_summary->value)) {
@@ -137,7 +137,7 @@ class ArticleDataExtractor implements EntityDataExtractorInterface {
       'created' => $entity->getCreatedTime(),
       'status' => $entity->status?->value,
       'uid' => '1',
-      'title' => $entity->title?->value,
+      'title' => trim($entity->title?->value ?? ''),
       'field_bylines' => $entity->get('field_byline_reference')->entity?->label(),
       'field_card_label' => $entity->field_card_label?->value,
       'field_dateline' => $entity->field_dateline?->value,
