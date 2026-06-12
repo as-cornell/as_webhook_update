@@ -206,11 +206,28 @@ Current maintainers for Drupal 10:
 
 ### HTTP code 0 errors
 
-If webhooks show "HTTP code 0", the destination server is unreachable:
+HTTP code 0 with "No response body" means the cURL request did not complete.
+The most common cause on Pantheon is a **cold container timeout**: the
+destination site's PHP container is not warm, Drupal bootstrap + entity
+processing exceeds the cURL timeout, and the sender gives up before a response
+is sent. This produces intermittent failures — the same webhook succeeds when
+the container is warm.
 
-- Verify the destination server is running
-- Check network connectivity
-- Verify the webhook listener endpoint exists
+The current timeout is 30 seconds (connect: 10s, total: 30s). If you still see
+HTTP 0 failures, check the cURL error number now logged alongside the HTTP code:
+
+```bash
+drush watchdog:show --type=as_webhook_update --count=20
+```
+
+A `cURL error 28` confirms a timeout. A `cURL error 6` or `7` indicates a DNS
+or connection failure — in that case, verify the destination URL in
+`as_webhook_update.domain_config` and confirm the endpoint is reachable:
+
+```bash
+curl -X POST https://departments.as.cornell.edu/webhook-entities/listener
+# Expect 403 (endpoint exists, no auth token). Anything else is a routing issue.
+```
 
 ### Testing webhooks
 

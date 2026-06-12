@@ -78,20 +78,29 @@ class HttpClientService {
       'Content-Type: application/json',
     ]);
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 
     // Execute the request.
     $result = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
+    $curl_errno = curl_errno($ch);
     curl_close($ch);
 
     // Log the transaction.
-    $this->logger->info('cURL request to @url, HTTP code @code, result: @result', [
+    $log_message = 'cURL request to @url, HTTP code @code, result: @result';
+    $log_context = [
       '@url' => $url,
       '@code' => $http_code,
       '@result' => $result ?: 'No response body',
-    ]);
+    ];
+    if ($curl_errno) {
+      $log_message .= ', cURL error @errno: @error';
+      $log_context['@errno'] = $curl_errno;
+      $log_context['@error'] = $curl_error;
+    }
+    $this->logger->info($log_message, $log_context);
 
     return [
       'success' => $http_code >= 200 && $http_code < 300,
