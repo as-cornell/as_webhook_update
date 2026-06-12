@@ -69,38 +69,48 @@ class HttpClientService {
       ];
     }
 
-    // Initialize cURL.
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-      'Authorization: ' . $auth_token,
-      'Content-Type: application/json',
-    ]);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    $attempt = 0;
+    $max_attempts = 2;
 
-    // Execute the request.
-    $result = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curl_error = curl_error($ch);
-    $curl_errno = curl_errno($ch);
-    curl_close($ch);
+    do {
+      $attempt++;
 
-    // Log the transaction.
-    $log_message = 'cURL request to @url, HTTP code @code, result: @result';
-    $log_context = [
-      '@url' => $url,
-      '@code' => $http_code,
-      '@result' => $result ?: 'No response body',
-    ];
-    if ($curl_errno) {
-      $log_message .= ', cURL error @errno: @error';
-      $log_context['@errno'] = $curl_errno;
-      $log_context['@error'] = $curl_error;
-    }
-    $this->logger->info($log_message, $log_context);
+      // Initialize cURL.
+      $ch = curl_init($url);
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: ' . $auth_token,
+        'Content-Type: application/json',
+      ]);
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+
+      // Execute the request.
+      $result = curl_exec($ch);
+      $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      $curl_error = curl_error($ch);
+      $curl_errno = curl_errno($ch);
+      curl_close($ch);
+
+      // Log the transaction.
+      $log_message = 'cURL request to @url, HTTP code @code, result: @result (attempt @attempt/@max)';
+      $log_context = [
+        '@url' => $url,
+        '@code' => $http_code,
+        '@result' => $result ?: 'No response body',
+        '@attempt' => $attempt,
+        '@max' => $max_attempts,
+      ];
+      if ($curl_errno) {
+        $log_message .= ', cURL error @errno: @error';
+        $log_context['@errno'] = $curl_errno;
+        $log_context['@error'] = $curl_error;
+      }
+      $this->logger->info($log_message, $log_context);
+
+    } while ($http_code === 0 && $attempt < $max_attempts);
 
     return [
       'success' => $http_code >= 200 && $http_code < 300,

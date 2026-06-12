@@ -213,8 +213,11 @@ processing exceeds the cURL timeout, and the sender gives up before a response
 is sent. This produces intermittent failures — the same webhook succeeds when
 the container is warm.
 
-The current timeout is 30 seconds (connect: 10s, total: 30s). If you still see
-HTTP 0 failures, check the cURL error number now logged alongside the HTTP code:
+The current timeout is 30 seconds (connect: 10s, total: 30s). Each request is
+automatically retried once on HTTP 0 — the first attempt warms the remote
+container even when it times out, so the retry typically succeeds. If you still
+see HTTP 0 on both attempts, check the cURL error number logged alongside the
+HTTP code:
 
 ```bash
 drush watchdog:show --type=as_webhook_update --count=20
