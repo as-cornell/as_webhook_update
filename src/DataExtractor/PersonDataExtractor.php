@@ -225,6 +225,14 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
       }
     }
 
+    // External profile link.
+    $external_profile_link = [];
+    if (!empty($entity->field_external_profile_link)) {
+      foreach ($entity->field_external_profile_link as $link) {
+        $external_profile_link[] = ['uri' => $link->uri, 'title' => $link->title];
+      }
+    }
+
     // Build person data array.
     $data = [
       'event' => $event,
@@ -244,6 +252,7 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
       'field_research_areas' => array_column($entity->get('field_research_areas')->getValue(), 'target_id'),
       'field_academic_interests' => array_column($entity->get('field_academic_interests')->getValue(), 'target_id'),
       'field_links' => $links,
+      'field_external_profile_link' => $external_profile_link,
       'field_summary' => $summary,
       'field_education' => ['format' => $entity->field_person_education->format, 'value' => $education],
       'field_keywords' => ['format' => $entity->field_keywords->format, 'value' => $keywords],
