@@ -64,3 +64,4 @@ services:
       - '@as_webhook_update.http_client'
       - '@as_webhook_update.person_type_routing'
       - '@logger.channel.as_webhook_update'
+      - '@state'

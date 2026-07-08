@@ -4,6 +4,7 @@ namespace Drupal\as_webhook_update\Service;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\State\StateInterface;
 use Drupal\as_webhook_update\Factory\EntityExtractorFactory;
 
 /**
@@ -17,6 +18,19 @@ use Drupal\as_webhook_update\Factory\EntityExtractorFactory;
  * 5. Logs all transactions
  */
 class WebhookDispatcherService {
+
+  /**
+   * State key that, when TRUE, suppresses all webhook dispatching.
+   *
+   * Set this during bulk operations (migrations, backfills) to avoid firing a
+   * webhook per saved entity, then clear it when done:
+   * @code
+   *   \Drupal::state()->set(WebhookDispatcherService::SUPPRESS_STATE_KEY, TRUE);
+   *   // ... bulk saves ...
+   *   \Drupal::state()->set(WebhookDispatcherService::SUPPRESS_STATE_KEY, FALSE);
+   * @endcode
+   */
+  const SUPPRESS_STATE_KEY = 'as_webhook_update.suppress';
 
   /**
    * The entity extractor factory.
@@ -54,6 +68,13 @@ class WebhookDispatcherService {
   protected $logger;
 
   /**
+   * The state service.
+   *
+   * @var \Drupal\Core\State\StateInterface
+   */
+  protected $state;
+
+  /**
    * Constructs a WebhookDispatcherService object.
    *
    * @param \Drupal\as_webhook_update\Factory\EntityExtractorFactory $extractor_factory
@@ -66,19 +87,23 @@ class WebhookDispatcherService {
    *   The person type routing service.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger channel.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The state service.
    */
   public function __construct(
     EntityExtractorFactory $extractor_factory,
     DestinationResolverService $destination_resolver,
     HttpClientService $http_client,
     PersonTypeRoutingService $person_type_routing,
-    LoggerChannelInterface $logger
+    LoggerChannelInterface $logger,
+    StateInterface $state
   ) {
     $this->extractorFactory = $extractor_factory;
     $this->destinationResolver = $destination_resolver;
     $this->httpClient = $http_client;
     $this->personTypeRouting = $person_type_routing;
     $this->logger = $logger;
+    $this->state = $state;
   }
 
   /**
@@ -90,6 +115,12 @@ class WebhookDispatcherService {
    *   The event type (create, update, delete).
    */
   public function dispatch(EntityInterface $entity, string $event): void {
+    // Kill switch for bulk operations (migrations, backfills): when suppressed,
+    // skip dispatching so a webhook isn't fired per saved entity.
+    if ($this->state->get(self::SUPPRESS_STATE_KEY, FALSE)) {
+      return;
+    }
+
     // Check if entity is supported.
     if (!$this->extractorFactory->isSupported($entity)) {
       return;
