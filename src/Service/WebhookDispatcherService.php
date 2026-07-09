@@ -113,11 +113,15 @@ class WebhookDispatcherService {
    *   The entity that triggered the event.
    * @param string $event
    *   The event type (create, update, delete).
+   * @param bool $force
+   *   When TRUE, dispatch even if the suppress kill switch is set. Used by the
+   *   batched re-dispatch worker to push a controlled backfill while ordinary
+   *   saves remain suppressed.
    */
-  public function dispatch(EntityInterface $entity, string $event): void {
+  public function dispatch(EntityInterface $entity, string $event, bool $force = FALSE): void {
     // Kill switch for bulk operations (migrations, backfills): when suppressed,
     // skip dispatching so a webhook isn't fired per saved entity.
-    if ($this->state->get(self::SUPPRESS_STATE_KEY, FALSE)) {
+    if (!$force && $this->state->get(self::SUPPRESS_STATE_KEY, FALSE)) {
       return;
     }
 
