@@ -22,6 +22,9 @@ services:
   as_webhook_update.person_type_routing:
     class: Drupal\as_webhook_update\Service\PersonTypeRoutingService
 
+  as_webhook_update.college_affiliation:
+    class: Drupal\as_webhook_update\Service\CollegeAffiliationService
+
   # Data Extractors (tagged services for factory pattern)
   as_webhook_update.extractor.article:
     class: Drupal\as_webhook_update\DataExtractor\ArticleDataExtractor
@@ -63,5 +66,6 @@ services:
       - '@as_webhook_update.destination_resolver'
       - '@as_webhook_update.http_client'
       - '@as_webhook_update.person_type_routing'
+      - '@as_webhook_update.college_affiliation'
       - '@logger.channel.as_webhook_update'
       - '@state'

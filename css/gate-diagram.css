@@ -1,0 +1,271 @@
+/**
+ * @file
+ * Dispatch gate diagram.
+ *
+ * Drawn with borders and pseudo-element connectors rather than an image or SVG,
+ * so it reflows on a narrow admin screen and inherits the admin theme's colours.
+ * Colours come from Claro's custom properties where they exist, with fallbacks
+ * for any other admin theme, and a dark-scheme override for Gin and friends.
+ */
+
+.awu-gate {
+  --awu-line: var(--color-gray-200, #d3d8de);
+  --awu-ink: var(--color-text, #232429);
+  --awu-muted: var(--color-text-secondary, #6b7280);
+  --awu-surface: var(--color-white, #fff);
+  --awu-raised: var(--color-gray-050, #f7f8f9);
+  --awu-accent: var(--color-absolutezero, #0d55bf);
+  --awu-stop: #d72222;
+  --awu-bypass: #6b4fbb;
+  --awu-pass: #1c7d4d;
+
+  max-width: 60rem;
+  margin: 0 0 2rem;
+  color: var(--awu-ink);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .awu-gate {
+    --awu-line: #3b3f46;
+    --awu-muted: #a0a6b0;
+    --awu-surface: #23262b;
+    --awu-raised: #2b2f35;
+    --awu-accent: #6ea8ff;
+    --awu-stop: #ff8080;
+    --awu-bypass: #b9a2ff;
+    --awu-pass: #5fcf97;
+  }
+}
+
+.awu-gate p {
+  margin: 0.25rem 0 0;
+}
+
+/* Start and end caps ----------------------------------------------------- */
+
+.awu-gate__start,
+.awu-gate__pass {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  border-radius: 2rem;
+  font-weight: 700;
+}
+
+.awu-gate__start {
+  background: var(--awu-raised);
+  border: 1px solid var(--awu-line);
+}
+
+.awu-gate__pass {
+  background: var(--awu-pass);
+  color: #fff;
+}
+
+.awu-gate__intro,
+.awu-gate__outcome {
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+/* Flow ------------------------------------------------------------------- */
+
+.awu-gate__flow {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.awu-gate__stage {
+  position: relative;
+  margin: 0;
+  padding: 1rem 0 1rem 1.75rem;
+  /* The spine every step hangs off. */
+  border-left: 2px solid var(--awu-line);
+}
+
+/* Close the spine across the start and end caps. */
+.awu-gate__intro::before,
+.awu-gate__outcome::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 2px;
+  height: 0.75rem;
+  background: var(--awu-line);
+}
+
+.awu-gate__intro::before {
+  bottom: -0.25rem;
+}
+
+.awu-gate__outcome::before {
+  top: -0.5rem;
+}
+
+.awu-gate__stage--gate {
+  border-left-color: var(--awu-accent);
+}
+
+.awu-gate__step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.awu-gate__index {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  margin-left: -2.6rem;
+  border-radius: 50%;
+  background: var(--awu-surface);
+  border: 2px solid var(--awu-line);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.awu-gate__stage--gate .awu-gate__index {
+  border-color: var(--awu-accent);
+  color: var(--awu-accent);
+}
+
+.awu-gate__label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--awu-muted);
+}
+
+.awu-gate__question {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.awu-gate__detail {
+  color: var(--awu-muted);
+  max-width: 46rem;
+}
+
+/* The three OR'd signals ------------------------------------------------- */
+
+.awu-gate__signals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.awu-gate__signal {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--awu-line);
+  border-top: 3px solid var(--awu-accent);
+  border-radius: 3px;
+  background: var(--awu-raised);
+}
+
+.awu-gate__signal-title {
+  display: block;
+  font-weight: 700;
+}
+
+.awu-gate__signal-test {
+  font-family: inherit;
+}
+
+.awu-gate__signal-note {
+  color: var(--awu-muted);
+  font-size: 0.8125rem;
+}
+
+.awu-gate__any {
+  margin-top: 0.6rem;
+  font-style: italic;
+  color: var(--awu-muted);
+}
+
+/* Branches off the spine ------------------------------------------------- */
+
+.awu-gate__branch {
+  position: relative;
+  margin-top: 0.75rem;
+  margin-left: 1.5rem;
+  padding: 0.35rem 0.75rem;
+  border-left: 3px solid currentColor;
+  background: var(--awu-raised);
+  font-weight: 600;
+}
+
+/* Elbow from the spine into the branch. */
+.awu-gate__branch::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -1.5rem;
+  width: 1.5rem;
+  border-top: 2px dotted currentColor;
+}
+
+.awu-gate__branch--stop {
+  color: var(--awu-stop);
+}
+
+.awu-gate__branch--bypass {
+  color: var(--awu-bypass);
+}
+
+/* Routing matrix --------------------------------------------------------- */
+
+.awu-gate__matrix {
+  width: 100%;
+  margin-top: 1.5rem;
+  border-collapse: collapse;
+}
+
+.awu-gate__matrix caption {
+  margin-bottom: 0.5rem;
+  text-align: left;
+  font-weight: 700;
+}
+
+.awu-gate__matrix th,
+.awu-gate__matrix td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--awu-line);
+  text-align: left;
+}
+
+.awu-gate__matrix thead th {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--awu-muted);
+}
+
+.awu-gate__matrix tbody th {
+  font-weight: 400;
+}
+
+.awu-gate__cell {
+  text-align: center;
+  color: var(--awu-line);
+}
+
+.awu-gate__cell.is-reached {
+  color: var(--awu-pass);
+}
+
+@media (max-width: 48rem) {
+  .awu-gate__matrix thead th:not(:first-child) {
+    /* Keep the header readable when the columns get tight. */
+    font-size: 0.6875rem;
+  }
+}

@@ -10,6 +10,43 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\as_webhook_update\Render\DispatchGateDiagram;
+
+/**
+ * Implements hook_theme().
+ */
+function as_webhook_update_theme() {
+  return [
+    'as_webhook_update_dispatch_gate' => [
+      'variables' => [
+        'stages' => [],
+        'routing' => [],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_help().
+ */
+function as_webhook_update_help($route_name, RouteMatchInterface $route_match) {
+  if ($route_name !== 'help.page.as_webhook_update') {
+    return NULL;
+  }
+
+  $build = [];
+
+  $build['about'] = [
+    '#type' => 'html_tag',
+    '#tag' => 'p',
+    '#value' => t('Sends person, article and taxonomy term changes on to the A&S sites as they are saved. The diagram below shows every check a person record passes through before it is dispatched, and where it goes once it clears them.'),
+  ];
+
+  $build['gate'] = (new DispatchGateDiagram())->build();
+
+  return $build;
+}
 
 /**
  * Implements hook_ENTITY_TYPE_postinsert() for nodes.

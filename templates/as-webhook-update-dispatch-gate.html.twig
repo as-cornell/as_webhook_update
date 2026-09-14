@@ -1,0 +1,89 @@
+{#
+/**
+ * @file
+ * Renders the person dispatch gate as a flow diagram and routing matrix.
+ *
+ * Available variables:
+ * - stages: ordered checks a person save passes through. Each has a label,
+ *   question and detail, plus any of: stop (text shown on the failing branch),
+ *   bypass (text shown on a branch that skips the rest), signals (a list of
+ *   title/test/note cards, any one of which passes the stage).
+ * - routing: headers and rows for the destination matrix.
+ */
+#}
+<div class="awu-gate">
+
+  <div class="awu-gate__intro">
+    <span class="awu-gate__start">{{ 'A person record is saved'|t }}</span>
+  </div>
+
+  <ol class="awu-gate__flow">
+    {% for stage in stages %}
+      <li class="awu-gate__stage{{ stage.signals ? ' awu-gate__stage--gate' }}">
+
+        <div class="awu-gate__step">
+          <span class="awu-gate__index">{{ loop.index }}</span>
+          <div class="awu-gate__text">
+            <span class="awu-gate__label">{{ stage.label }}</span>
+            <p class="awu-gate__question">{{ stage.question }}</p>
+            <p class="awu-gate__detail">{{ stage.detail }}</p>
+          </div>
+        </div>
+
+        {% if stage.signals %}
+          <ul class="awu-gate__signals">
+            {% for signal in stage.signals %}
+              <li class="awu-gate__signal">
+                <span class="awu-gate__signal-title">{{ signal.title }}</span>
+                <p class="awu-gate__signal-test">{{ signal.test }}</p>
+                <p class="awu-gate__signal-note">{{ signal.note }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+          <p class="awu-gate__any">{{ 'Any one of these is enough.'|t }}</p>
+        {% endif %}
+
+        {% if stage.stop %}
+          <p class="awu-gate__branch awu-gate__branch--stop">{{ stage.stop }}</p>
+        {% endif %}
+
+        {% if stage.bypass %}
+          <p class="awu-gate__branch awu-gate__branch--bypass">{{ stage.bypass }}</p>
+        {% endif %}
+
+      </li>
+    {% endfor %}
+  </ol>
+
+  <div class="awu-gate__outcome">
+    <span class="awu-gate__pass">{{ 'Cleared: routed by person type'|t }}</span>
+  </div>
+
+  <table class="awu-gate__matrix">
+    <caption>{{ 'Where a person that clears the gate is sent'|t }}</caption>
+    <thead>
+      <tr>
+        <th scope="col">{{ 'Person type'|t }}</th>
+        {% for header in routing.headers %}
+          <th scope="col">{{ header }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in routing.rows %}
+        <tr>
+          <th scope="row">{{ row.label }}</th>
+          {% for cell in row.cells %}
+            <td class="awu-gate__cell{{ cell.reached ? ' is-reached' }}">
+              <span class="visually-hidden">
+                {{ cell.reached ? 'Sent to'|t : 'Not sent to'|t }} {{ cell.name }}
+              </span>
+              <span aria-hidden="true">{{ cell.reached ? '●' : '·' }}</span>
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>

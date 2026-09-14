@@ -4,6 +4,7 @@ namespace Drupal\as_webhook_update\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\as_webhook_update\Render\DispatchGateDiagram;
 use Drupal\key\KeyRepositoryInterface;
 use Drupal\key\Entity\Key;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -101,6 +102,18 @@ class WebhookSettingsForm extends FormBase {
       '#type' => 'submit',
       '#value' => $this->t('Save Configuration'),
       '#button_type' => 'primary',
+    ];
+
+    // Reference rather than configuration, so it sits below the token field and
+    // starts closed. The rules it draws are compiled in and cannot be edited
+    // here; the point is to answer "why is this person not syncing?" without
+    // sending anyone to read the dispatcher.
+    $form['gate'] = [
+      '#type' => 'details',
+      '#title' => $this->t('How a person record reaches the A&S sites'),
+      '#open' => FALSE,
+      '#weight' => 100,
+      'diagram' => (new DispatchGateDiagram())->build(),
     ];
 
     return $form;

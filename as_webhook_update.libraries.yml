@@ -1,0 +1,5 @@
+gate_diagram:
+  version: 1.x
+  css:
+    component:
+      css/gate-diagram.css: {}

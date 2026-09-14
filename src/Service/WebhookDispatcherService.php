@@ -61,6 +61,13 @@ class WebhookDispatcherService {
   protected $personTypeRouting;
 
   /**
+   * The college affiliation service.
+   *
+   * @var \Drupal\as_webhook_update\Service\CollegeAffiliationService
+   */
+  protected $collegeAffiliation;
+
+  /**
    * The logger channel.
    *
    * @var \Drupal\Core\Logger\LoggerChannelInterface
@@ -85,6 +92,8 @@ class WebhookDispatcherService {
    *   The HTTP client service.
    * @param \Drupal\as_webhook_update\Service\PersonTypeRoutingService $person_type_routing
    *   The person type routing service.
+   * @param \Drupal\as_webhook_update\Service\CollegeAffiliationService $college_affiliation
+   *   The college affiliation service.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger channel.
    * @param \Drupal\Core\State\StateInterface $state
@@ -95,6 +104,7 @@ class WebhookDispatcherService {
     DestinationResolverService $destination_resolver,
     HttpClientService $http_client,
     PersonTypeRoutingService $person_type_routing,
+    CollegeAffiliationService $college_affiliation,
     LoggerChannelInterface $logger,
     StateInterface $state
   ) {
@@ -102,6 +112,7 @@ class WebhookDispatcherService {
     $this->destinationResolver = $destination_resolver;
     $this->httpClient = $http_client;
     $this->personTypeRouting = $person_type_routing;
+    $this->collegeAffiliation = $college_affiliation;
     $this->logger = $logger;
     $this->state = $state;
   }
@@ -195,6 +206,28 @@ class WebhookDispatcherService {
   protected function dispatchPerson(EntityInterface $entity, string $event): void {
     // Only dispatch from people schema.
     if ($this->destinationResolver->getSchema() !== 'people') {
+      return;
+    }
+
+    // Arts and Sciences gate. The people site holds the university-wide roster,
+    // but every destination below is an A&S property, so a person with no A&S
+    // affiliation is not pushed to them.
+    //
+    // Deletes pass ungated, deliberately. A record removed at the source has to
+    // be removed downstream whatever its affiliation was, and by the time a
+    // delete fires the fields the gate reads may already be unresolvable. The
+    // gap this leaves is a person who keeps their node but loses their A&S
+    // affiliation: their downstream copy survives, frozen at its last good
+    // state, and needs a reconciliation pass rather than a dispatch.
+    if ($event !== 'delete' && !$this->collegeAffiliation->isArtsAndSciences($entity)) {
+      $this->logger->info(
+        'Skipped the @event webhook for person nid @nid (@title): no Arts and Sciences affiliation.',
+        [
+          '@event' => $event,
+          '@nid' => $entity->id(),
+          '@title' => $entity->label(),
+        ]
+      );
       return;
     }
 

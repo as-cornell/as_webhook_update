@@ -3,7 +3,7 @@ description: 'Provides a webhook notification service tied into hook_post_action
 package: AS
 type: module
 core_version_requirement: ^9.5 || ^10 || ^11
-configure: as_webhook_update.list
+configure: as_webhook_update.settings
 dependencies:
   - hook_post_action
   - key:key
