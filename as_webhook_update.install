@@ -1,0 +1,90 @@
+<?php
+
+/**
+ * @file
+ * Install and requirements hooks for the A&S Webhook Update module.
+ */
+
+use Drupal\as_webhook_update\Service\BulkGuardrailService;
+use Drupal\as_webhook_update\Service\WebhookDispatcherService;
+
+/**
+ * Implements hook_requirements().
+ *
+ * Surfaces the two conditions that stop webhooks reaching the A&S sites without
+ * anything obviously being wrong.
+ *
+ * Both are deliberate mechanisms, and both are silent by nature: the site keeps
+ * working, editors keep saving, and downstream simply stops hearing about it.
+ * That is the failure this project keeps meeting in different disguises, so the
+ * mechanisms get a row on the status report rather than being left to be
+ * noticed.
+ */
+function as_webhook_update_requirements($phase) {
+  if ($phase !== 'runtime') {
+    return [];
+  }
+
+  $requirements = [];
+  $state = \Drupal::state();
+  $formatter = \Drupal::service('date.formatter');
+
+  // --- The kill switch ------------------------------------------------------
+  if ((bool) $state->get(WebhookDispatcherService::SUPPRESS_STATE_KEY, FALSE)) {
+    $requirements['as_webhook_update_suppressed'] = [
+      'title' => t('Outbound webhooks'),
+      'value' => t('Suppressed'),
+      'severity' => REQUIREMENT_WARNING,
+      'description' => t('The kill switch is set, so no entity changes are being sent to the A&S sites. This is expected during a migration or a paced backfill. Clear it with <code>drush sset @key 0</code>.', [
+        '@key' => WebhookDispatcherService::SUPPRESS_STATE_KEY,
+      ]),
+    ];
+  }
+
+  // --- The bulk guardrail ---------------------------------------------------
+  /** @var \Drupal\as_webhook_update\Service\BulkGuardrailService $guardrail */
+  $guardrail = \Drupal::service('as_webhook_update.bulk_guardrail');
+  $queued = $guardrail->queuedCount();
+  $tripped = $guardrail->lastTripped();
+
+  if ($queued > 0) {
+    // The queue drains itself on cron, so a small backlog is the system working
+    // as designed and only worth a note. A backlog that is not going down means
+    // cron is not running, which is a real problem and one that hides itself.
+    $severity = $queued > 500 ? REQUIREMENT_WARNING : REQUIREMENT_INFO;
+    $requirements['as_webhook_update_guardrail'] = [
+      'title' => t('Webhook bulk guardrail'),
+      'value' => t('@count dispatch(es) queued', ['@count' => $queued]),
+      'severity' => $severity,
+      'description' => t('A bulk operation exceeded @threshold dispatches a minute, so these were queued rather than sent all at once. They drain automatically on cron. If the number is not falling, check that cron is running. To send them now: <code>drush queue:run as_webhook_update_guardrail</code>.', [
+        '@threshold' => $guardrail->threshold(),
+      ]),
+    ];
+  }
+  elseif ($tripped > 0) {
+    $requirements['as_webhook_update_guardrail'] = [
+      'title' => t('Webhook bulk guardrail'),
+      'value' => t('Idle, last tripped @ago ago', [
+        '@ago' => $formatter->formatTimeDiffSince($tripped),
+      ]),
+      'severity' => REQUIREMENT_OK,
+      'description' => t('Everything diverted has since been sent.'),
+    ];
+  }
+
+  // --- The explicit allowance -----------------------------------------------
+  // Worth its own row: it is meant to be switched on for one operation and off
+  // again, and left on it silently removes the protection entirely.
+  if ((bool) $state->get(BulkGuardrailService::ALLOW_BULK_KEY, FALSE)) {
+    $requirements['as_webhook_update_allow_bulk'] = [
+      'title' => t('Webhook bulk guardrail'),
+      'value' => t('Disabled by @key', ['@key' => BulkGuardrailService::ALLOW_BULK_KEY]),
+      'severity' => REQUIREMENT_WARNING,
+      'description' => t('Bulk dispatching is currently allowed without limit, so a mass edit or import will send every webhook synchronously. Turn the guardrail back on with <code>drush sdel @key</code>.', [
+        '@key' => BulkGuardrailService::ALLOW_BULK_KEY,
+      ]),
+    ];
+  }
+
+  return $requirements;
+}

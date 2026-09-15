@@ -25,6 +25,16 @@ services:
   as_webhook_update.college_affiliation:
     class: Drupal\as_webhook_update\Service\CollegeAffiliationService
 
+  # Diverts a bulk operation into the redispatch queue instead of letting it
+  # fire thousands of synchronous outbound calls. See BULK-GUARDRAIL.md.
+  as_webhook_update.bulk_guardrail:
+    class: Drupal\as_webhook_update\Service\BulkGuardrailService
+    arguments:
+      - '@state'
+      - '@cache.default'
+      - '@queue'
+      - '@logger.channel.as_webhook_update'
+
   # Data Extractors (tagged services for factory pattern)
   as_webhook_update.extractor.article:
     class: Drupal\as_webhook_update\DataExtractor\ArticleDataExtractor
@@ -67,5 +77,6 @@ services:
       - '@as_webhook_update.http_client'
       - '@as_webhook_update.person_type_routing'
       - '@as_webhook_update.college_affiliation'
+      - '@as_webhook_update.bulk_guardrail'
       - '@logger.channel.as_webhook_update'
       - '@state'

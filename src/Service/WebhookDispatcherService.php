@@ -68,6 +68,13 @@ class WebhookDispatcherService {
   protected $collegeAffiliation;
 
   /**
+   * The bulk guardrail service.
+   *
+   * @var \Drupal\as_webhook_update\Service\BulkGuardrailService
+   */
+  protected $bulkGuardrail;
+
+  /**
    * The logger channel.
    *
    * @var \Drupal\Core\Logger\LoggerChannelInterface
@@ -94,6 +101,8 @@ class WebhookDispatcherService {
    *   The person type routing service.
    * @param \Drupal\as_webhook_update\Service\CollegeAffiliationService $college_affiliation
    *   The college affiliation service.
+   * @param \Drupal\as_webhook_update\Service\BulkGuardrailService $bulk_guardrail
+   *   The bulk guardrail service.
    * @param \Drupal\Core\Logger\LoggerChannelInterface $logger
    *   The logger channel.
    * @param \Drupal\Core\State\StateInterface $state
@@ -105,6 +114,7 @@ class WebhookDispatcherService {
     HttpClientService $http_client,
     PersonTypeRoutingService $person_type_routing,
     CollegeAffiliationService $college_affiliation,
+    BulkGuardrailService $bulk_guardrail,
     LoggerChannelInterface $logger,
     StateInterface $state
   ) {
@@ -113,6 +123,7 @@ class WebhookDispatcherService {
     $this->httpClient = $http_client;
     $this->personTypeRouting = $person_type_routing;
     $this->collegeAffiliation = $college_affiliation;
+    $this->bulkGuardrail = $bulk_guardrail;
     $this->logger = $logger;
     $this->state = $state;
   }
@@ -138,6 +149,14 @@ class WebhookDispatcherService {
 
     // Check if entity is supported.
     if (!$this->extractorFactory->isSupported($entity)) {
+      return;
+    }
+
+    // Bulk guardrail. Past a rolling threshold this queues the dispatch rather
+    // than sending it, so a migration or a bulk edit cannot fire thousands of
+    // synchronous outbound calls. $force means this is the queue worker draining
+    // that very queue, which must not be re-queued into itself.
+    if (!$force && !$this->bulkGuardrail->allows($entity, $event)) {
       return;
     }
 
