@@ -3,7 +3,7 @@
 
 ## INTRODUCTION
 
-![Elway](https://media.giphy.com/media/xUPOqeKrYFREHG4Jry/giphy.gif "send it")
+![Bo Nix throwing](https://media.giphy.com/media/gdsdkMGeVQQa7ysFK6/giphy.gif "send it")
 
 
 Provides a webhook notification service that sends entity changes (articles, people, taxonomy terms) to remote systems via HTTP webhooks. Uses an OOP architecture with services, extractors, and dependency injection for maintainability and testability.
