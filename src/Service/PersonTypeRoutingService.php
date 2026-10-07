@@ -10,12 +10,17 @@ namespace Drupal\as_webhook_update\Service;
  *
  * Routing rules:
  * - Faculty: AS + MediaReport + Dept
- * - College Staff: AS + MediaReport
- * - Advisory Council: AS + MediaReport
+ * - College Staff: AS + MediaReport + Dept
+ * - Advisory Council: AS + MediaReport + Dept
  * - Other Faculty (with as_directory=true): AS + MediaReport + Dept
  * - Other Faculty (with as_directory=false): Dept only
  * - Department Staff: Dept only
  * - Graduate Student: Dept only
+ *
+ * Everyone sent to AS is also sent to Dept, because artsci-departments hosts
+ * the as.cornell.edu domain that replaces artsci-as. Without this, College
+ * Staff and Advisory Council never reached it, and its migrated pages could
+ * not link to them.
  */
 class PersonTypeRoutingService {
 
@@ -78,13 +83,16 @@ class PersonTypeRoutingService {
    * @param string $person_type
    *   The person type (e.g., 'Faculty', 'Department Staff').
    * @param bool $as_directory
-   *   Whether the person has as_directory flag set (not currently used).
+   *   Whether the person has as_directory flag set.
    *
    * @return bool
    *   TRUE if should be sent to department webhook, FALSE otherwise.
    */
   public function shouldSendToDept(string $person_type, bool $as_directory): bool {
-    return in_array($person_type, self::DEPT_PERSON_TYPES);
+    // The departments site also hosts as.cornell.edu, so it needs every
+    // person the A&S site gets as well as its own department types.
+    return in_array($person_type, self::DEPT_PERSON_TYPES)
+      || $this->shouldSendToAs($person_type, $as_directory);
   }
 
   /**
