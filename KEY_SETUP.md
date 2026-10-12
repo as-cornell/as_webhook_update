@@ -2,242 +2,172 @@
 
 ## Overview
 
-The AS Webhook Update module uses Drupal's **Key module** to securely store the authorization token. This prevents the token from being exported with configuration and committed to version control.
+The AS Webhook Update module reads its authorization token through Drupal's
+**Key module**, from the key `as_webhook_update_token`. Where the token value
+actually lives depends on the key's **provider**, and only one choice keeps it
+out of git:
 
-## Why Use the Key Module?
+| Provider | Where the value lives | Exported by `drush cex`? |
+| --- | --- | --- |
+| `state` (use this) | the `key_value` table, under a state variable | No. Only the variable name is exported |
+| `config` | inside the key's own config entity | **Yes. The token is written to `key.key.as_webhook_update_token.yml`** |
 
-✅ **Security**: Token stored in database, not in exportable config
-✅ **Version Control Safe**: Token never appears in YAML files or git history
-✅ **Environment Flexibility**: Different tokens for dev/test/production
-✅ **Best Practice**: Follows Drupal security standards
+The `config` provider stores the value *in configuration*. Being a Key entity
+is not protection on its own: with `config`, the next config export writes the
+token to the sync directory and the next commit publishes it. Earlier versions
+of this module created the key with the `config` provider and this document
+said the opposite. Version 2.2.2 and later create it with `state`.
 
 ## Requirements
 
-The Key module must be installed and enabled:
+The Key module must be installed and enabled, in a release that includes the
+state provider (the A&S sites run 8.x-1.22):
 
 ```bash
-# If not already installed
 composer require drupal/key
-
-# Enable the module
 drush en key -y
 ```
 
-## Setting Up the Authorization Token
+## Setting up the token
 
-### Method 1: Via Admin UI (Recommended)
+### Method 1: Admin UI
 
-1. Navigate to **Configuration → Services → Webhook Update Settings**
-   URL: `/admin/config/services/webhook-update`
+1. Go to **AS Webhook Update Settings**
+   (`/admin/config/as_webhook_update/settings`).
+2. Enter the token and click **Save Configuration**.
 
-2. Enter your authorization token in the "Authorization Token" field
+If the key does not exist yet, the form creates it with the `state` provider
+(state variable `as_webhook_update.token`) and stores the value there. If the
+key exists and uses `state`, the form writes to the state variable it names.
 
-3. Click "Save Configuration"
+The key entity itself is configuration. On an environment where configuration
+is locked (`config_readonly`), creating the key from the form will fail; ship
+the key's YAML (below) with a deploy instead and set only the value on the
+environment.
 
-The token will be securely stored in the database using the Key module.
+### Method 2: Drush
 
-### Method 2: Via Drush
+Create the key once, then set the value. The key entity can be exported and
+committed safely, because it only names the state variable:
+
+```yaml
+# config/key.key.as_webhook_update_token.yml
+id: as_webhook_update_token
+label: 'Webhook Update Authorization Token'
+description: 'Authorization token for AS Webhook Update module'
+key_type: authentication
+key_type_settings: {  }
+key_provider: state
+key_provider_settings:
+  state_key: as_webhook_update.token
+key_input: none
+key_input_settings: {  }
+```
 
 ```bash
-# Create/update the key programmatically
+# Set or rotate the value on each environment
+drush sset as_webhook_update.token 'YOUR_TOKEN_HERE'
+```
+
+On Pantheon, send the output to a file or `/dev/null`, because Terminus echoes
+back the command it ran, token included:
+
+```bash
+terminus drush <site>.<env> -- sset as_webhook_update.token 'YOUR_TOKEN_HERE' > /dev/null 2>&1
+```
+
+## Verifying the token
+
+```bash
+# Provider and state variable (should say state / as_webhook_update.token)
 drush php-eval "
 \$key = \Drupal::service('key.repository')->getKey('as_webhook_update_token');
-if (!\$key) {
-  \$key = \Drupal\key\Entity\Key::create([
-    'id' => 'as_webhook_update_token',
-    'label' => 'Webhook Update Authorization Token',
-    'key_type' => 'authentication',
-    'key_provider' => 'config',
-    'key_provider_settings' => ['key_value' => 'YOUR_TOKEN_HERE'],
-  ]);
-} else {
-  \$key->setKeyValue('YOUR_TOKEN_HERE');
-}
-\$key->save();
-echo 'Token saved successfully';
+echo \$key ? \$key->getKeyProvider()->getPluginId() . ' ' . json_encode(\$key->get('key_provider_settings')) : 'Key NOT configured';
 "
-```
 
-### Method 3: Via Key Module UI
-
-1. Navigate to **Configuration → System → Keys**
-   URL: `/admin/config/system/keys`
-
-2. Edit the key with ID `as_webhook_update_token`
-
-3. Update the key value
-
-4. Save
-
-## Verifying the Token
-
-Check that the token is configured correctly:
-
-```bash
-# Verify key exists
+# Length and fingerprint, without printing the value
 drush php-eval "
-\$key = \Drupal::service('key.repository')->getKey('as_webhook_update_token');
-echo \$key ? 'Token is configured' : 'Token NOT configured';
-"
-
-# Test token retrieval (doesn't display actual value)
-drush php-eval "
-\$key = \Drupal::service('key.repository')->getKey('as_webhook_update_token');
-\$value = \$key ? \$key->getKeyValue() : NULL;
-echo \$value ? 'Token retrieved successfully (' . strlen(\$value) . ' characters)' : 'No token value';
+\$value = \Drupal::service('key.repository')->getKey('as_webhook_update_token')?->getKeyValue();
+echo \$value ? strlen(\$value) . ' characters, sha256 ' . substr(hash('sha256', \$value), 0, 12) : 'No token value';
 "
 ```
 
-## Key Configuration Details
+Comparing fingerprints is the safe way to confirm that a sender and its
+receivers hold the same token.
 
-- **Key ID**: `as_webhook_update_token`
-- **Key Type**: `authentication`
-- **Key Provider**: `config` (database storage)
-- **Storage Location**: Database (`key_value` table)
+## Moving an existing key from `config` to `state`
 
-## Security Notes
+If `config/key.key.as_webhook_update_token.yml` contains `key_provider: config`
+or a `key_value:` line, the token is in your config sync directory and very
+likely in git history.
 
-### ✅ DO:
-- Use different tokens for each environment (local, dev, test, production)
-- Rotate tokens periodically
-- Restrict access to the Key module configuration page
-- Use strong, random tokens (32+ characters)
+1. Copy the current value into state, then switch the provider, on each
+   environment:
 
-### ❌ DON'T:
-- Never commit tokens to version control
-- Don't use the same token across all environments
-- Don't share tokens in plain text (Slack, email, etc.)
-- Don't export the key with configuration
+   ```bash
+   drush php-eval "
+   \$key = \Drupal::service('key.repository')->getKey('as_webhook_update_token');
+   \Drupal::state()->set('as_webhook_update.token', \$key->getKeyValue());
+   \$key->set('key_provider', 'state');
+   \$key->set('key_provider_settings', ['state_key' => 'as_webhook_update.token']);
+   \$key->set('key_input', 'none');
+   \$key->save();
+   "
+   ```
 
-## Environment-Specific Tokens
+   Check the fingerprint (above) is unchanged before and after.
 
-### Local Development (Lando)
+2. Export the key and commit it. The file should now carry only
+   `state_key: as_webhook_update.token`.
 
-Set up your local token:
+3. **Rotate the token.** Rewriting git history does not remove the old value
+   from a host such as GitHub, which keeps serving old commits by SHA until
+   its support team garbage-collects them. Treat a token that was committed as
+   exposed.
+
+## Configuration export and import
 
 ```bash
-lando drush php-eval "
-\$key = \Drupal\key\Entity\Key::create([
-  'id' => 'as_webhook_update_token',
-  'label' => 'Webhook Update Authorization Token',
-  'key_type' => 'authentication',
-  'key_provider' => 'config',
-  'key_provider_settings' => ['key_value' => 'local-dev-token-12345'],
-]);
-\$key->save();
-"
+drush cex -y
+grep -rn "key_value" config/key.key.as_webhook_update_token.yml
+# No output is correct. A key_value line means the token was exported.
 ```
 
-### Pantheon Environments
+## Security notes
 
-For Pantheon, you have two options:
-
-#### Option 1: Set via Terminus (Recommended)
-
-```bash
-# Set the token in the database via SQL
-terminus drush <site>.<env> -- php-eval "
-\$key = \Drupal::service('key.repository')->getKey('as_webhook_update_token');
-if (!\$key) {
-  \$key = \Drupal\key\Entity\Key::create([
-    'id' => 'as_webhook_update_token',
-    'label' => 'Webhook Update Authorization Token',
-    'key_type' => 'authentication',
-    'key_provider' => 'config',
-    'key_provider_settings' => ['key_value' => 'PRODUCTION_TOKEN_HERE'],
-  ]);
-} else {
-  \$key->setKeyValue('PRODUCTION_TOKEN_HERE');
-}
-\$key->save();
-"
-```
-
-#### Option 2: Set via Admin UI
-
-1. Log into Pantheon environment
-2. Navigate to `/admin/config/services/webhook-update`
-3. Enter token and save
+- Use a different token on each environment where practical, and a long random
+  one: `openssl rand -hex 32` gives 64 hex characters with nothing to escape
+  in a header or a shell.
+- Restrict the "Administer keys" permission.
+- Do not paste tokens into Slack, email or tickets. Compare fingerprints
+  instead.
 
 ## Troubleshooting
 
-### Token Not Found Error
+### "Authorization token not configured" in logs
 
-If you see "Authorization token not configured" in logs:
+The key is missing or its state variable is empty:
 
 ```bash
-# Check if key exists
-drush php-eval "var_dump(\Drupal::service('key.repository')->getKey('as_webhook_update_token'));"
-
-# If null, create the key
-drush ev "\$key = \Drupal\key\Entity\Key::create(['id' => 'as_webhook_update_token', 'label' => 'Webhook Token', 'key_type' => 'authentication', 'key_provider' => 'config', 'key_provider_settings' => ['key_value' => 'YOUR_TOKEN']]); \$key->save();"
+drush php-eval "var_dump(\Drupal::service('key.repository')->getKey('as_webhook_update_token')?->getKeyProvider()->getPluginId());"
+drush php-eval "echo \Drupal::state()->get('as_webhook_update.token') ? 'state variable set' : 'state variable empty';"
 ```
 
-### Key Module Not Installed
+### The form says the token was not saved
 
-If you get "service not found" errors:
+The key uses a provider that cannot store values (for example `env` or
+`file`). Set the value wherever that provider reads from, or move the key to
+`state` as described above.
+
+### Key module not installed
 
 ```bash
-# Install and enable Key module
 composer require drupal/key
 drush en key -y
 drush cr
 ```
 
-### Permission Issues
-
-Ensure users have permission to configure keys:
-
-- Navigate to `/admin/people/permissions`
-- Grant "Administer keys" permission to appropriate roles
-
-## Migration from Old Config Storage
-
-If you're upgrading from the old version that stored tokens in config:
-
-```bash
-# Export old token value
-drush cget as_webhook_update.settings token
-
-# Copy the token value and set it via the new form at:
-# /admin/config/services/webhook-update
-
-# Or via drush:
-drush php-eval "
-\$old_token = \Drupal::config('as_webhook_update.settings')->get('token');
-if (\$old_token) {
-  \$key = \Drupal\key\Entity\Key::create([
-    'id' => 'as_webhook_update_token',
-    'label' => 'Webhook Update Authorization Token',
-    'key_type' => 'authentication',
-    'key_provider' => 'config',
-    'key_provider_settings' => ['key_value' => \$old_token],
-  ]);
-  \$key->save();
-  echo 'Migrated token to Key module';
-}
-"
-
-# Clean up old config
-drush cdel as_webhook_update.settings token
-```
-
-## Configuration Export/Import
-
-The Key module ensures tokens are **NOT** exported with configuration:
-
-```bash
-# When you export config, the key value is NOT included
-drush cex -y
-
-# Check that token is NOT in exported config
-grep -r "as_webhook_update_token" config/
-# Should show key config but NOT the actual token value
-```
-
-This is the desired behavior! Tokens stay in the database and must be set manually in each environment.
-
 ---
 
-**Last Updated**: February 25, 2026
-**Module Version**: 2.0 (OOP Refactored)
+**Last Updated**: October 12, 2026
+**Module Version**: 2.2.2

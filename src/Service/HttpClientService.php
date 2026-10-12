@@ -61,7 +61,7 @@ class HttpClientService {
     $auth_token = $key ? $key->getKeyValue() : '';
 
     if (empty($auth_token)) {
-      $this->logger->error('Webhook authorization token is not configured. Please configure it at /admin/config/services/webhook-update');
+      $this->logger->error('Webhook authorization token is not configured. Please configure it at /admin/config/as_webhook_update/settings');
       return [
         'success' => FALSE,
         'http_code' => 0,

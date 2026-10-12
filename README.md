@@ -33,11 +33,11 @@ Provides a webhook notification service that sends entity changes (articles, peo
    ```
 
 3. **Configure the authorization token:**
-   - Navigate to `/admin/config/services/webhook-update`
+   - Navigate to `/admin/config/as_webhook_update/settings`
    - Enter your authorization token
    - Click "Save Configuration"
 
-   The token is securely stored using the Key module and will not be exported with configuration.
+   The form stores the token in Drupal state through the Key module (provider `state`), so a config export carries only the state variable name. See `KEY_SETUP.md`.
 
 4. **Verify the configuration:**
    ```bash
@@ -85,18 +85,10 @@ Provides a webhook notification service that sends entity changes (articles, peo
    # Get the old token value
    drush cget as_webhook_update.settings token
 
-   # Set it via the new form at /admin/config/services/webhook-update
-   # Or via drush:
-   drush php-eval "
-   \$key = \Drupal\key\Entity\Key::create([
-     'id' => 'as_webhook_update_token',
-     'label' => 'Webhook Update Authorization Token',
-     'key_type' => 'authentication',
-     'key_provider' => 'config',
-     'key_provider_settings' => ['key_value' => 'YOUR_TOKEN_HERE'],
-   ]);
-   \$key->save();
-   "
+   # Set it via the form at /admin/config/as_webhook_update/settings,
+   # which creates the key with the state provider. Or via drush, after
+   # deploying the key entity described in KEY_SETUP.md:
+   drush sset as_webhook_update.token 'YOUR_TOKEN_HERE'
    ```
 
 5. **Test the webhooks:**
@@ -107,9 +99,9 @@ Provides a webhook notification service that sends entity changes (articles, peo
 
 ### Authorization Token
 
-The webhook authorization token is stored securely via the **Key module** and is NOT exported with configuration:
+The webhook authorization token is read through the **Key module** from the key `as_webhook_update_token`, which should use the `state` provider. With `state`, the value is not exported with configuration; with Key's `config` provider it is. See `KEY_SETUP.md`.
 
-- **Configure via UI:** `/admin/config/services/webhook-update`
+- **Configure via UI:** `/admin/config/as_webhook_update/settings`
 - **Configure via Drush:** See installation instructions above
 - **Documentation:** See `KEY_SETUP.md` for detailed setup instructions
 

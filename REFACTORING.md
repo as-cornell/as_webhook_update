@@ -132,6 +132,13 @@ Same pattern for `postupdate`, `postdelete`, and taxonomy hooks.
 
 ## Security: Key Module Integration
 
+> **Correction (October 2026, v2.2.2):** the claims below were wrong as
+> written. The refactor created the key with Key's `config` provider, which
+> stores the value inside the key's config entity, so `drush cex` exported the
+> token and it was committed. Version 2.2.2 creates the key with the `state`
+> provider, which exports only the state variable name. See
+> [KEY_SETUP.md](KEY_SETUP.md) for setup and for moving an existing key.
+
 The module now uses Drupal's **Key module** to store the authorization token:
 
 - ✅ Token stored in **database**, not exportable config
@@ -141,7 +148,7 @@ The module now uses Drupal's **Key module** to store the authorization token:
 
 ### Setting Up the Token
 
-1. Navigate to `/admin/config/services/webhook-update`
+1. Navigate to `/admin/config/as_webhook_update/settings`
 2. Enter your authorization token
 3. Click "Save Configuration"
 
