@@ -74,7 +74,11 @@ below explains why they got a queue of their own instead.)
 
 ### Shape
 
-- **Counter** over a rolling 60 second window.
+- **Counter** over a rolling 60 second window. It counts only dispatches that
+  have somewhere to go from this site. artsci-as receives people but never
+  sends them, so before v2.2.3 saving the received copies tripped the guardrail
+  and queued hundreds of items that drained as no-ops (196 during the 14 October
+  2026 re-send).
 - **Threshold: 25 per minute**, overridable per environment via the State key
   `as_webhook_update.bulk_threshold`. Roughly 3x the observed peak of 8, so it
   cannot trip on real editing, while a bulk operation crosses it in the first

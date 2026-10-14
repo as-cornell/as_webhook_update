@@ -152,6 +152,13 @@ class WebhookDispatcherService {
       return;
     }
 
+    // Nothing to send from this site, so nothing for the guardrail to count.
+    // artsci-as receives people but must never send them, and saving the
+    // received copies used to trip the guardrail and queue hundreds of no-ops.
+    if (!$this->hasDestination($entity)) {
+      return;
+    }
+
     // Bulk guardrail. Past a rolling threshold this queues the dispatch rather
     // than sending it, so a migration or a bulk edit cannot fire thousands of
     // synchronous outbound calls. $force means this is the queue worker draining
@@ -175,6 +182,35 @@ class WebhookDispatcherService {
     elseif ($entity_type === 'taxonomy_term') {
       $this->dispatchTaxonomyTerm($entity, $event);
     }
+  }
+
+  /**
+   * Whether this site has anywhere to send the entity.
+   *
+   * Mirrors the destination each dispatch method uses: people only leave the
+   * people site, articles need an articles destination, and terms go to the
+   * department people destination.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity being saved or deleted.
+   *
+   * @return bool
+   *   TRUE if a dispatch could reach at least one destination.
+   */
+  protected function hasDestination(EntityInterface $entity): bool {
+    if ($entity->getEntityTypeId() === 'taxonomy_term') {
+      return $this->destinationResolver->getDeptPeopleDestination() !== NULL;
+    }
+    if ($entity->getEntityTypeId() !== 'node') {
+      return FALSE;
+    }
+    if ($entity->bundle() === 'article') {
+      return $this->destinationResolver->getArticlesDestination() !== NULL;
+    }
+    if ($entity->bundle() === 'person') {
+      return $this->destinationResolver->getSchema() === 'people';
+    }
+    return FALSE;
   }
 
   /**
