@@ -16,6 +16,9 @@ namespace Drupal\as_webhook_update\Service;
  * - Other Faculty (with as_directory=false): Dept only
  * - Department Staff: Dept only
  * - Graduate Student: Dept only
+ * - Emeritus: Dept only. Department sites keep their emeriti; the A&S site
+ *   and the media report do not list them, and the receiver keeps them off
+ *   the as.cornell.edu domain.
  *
  * Everyone sent to AS is also sent to Dept, because artsci-departments hosts
  * the as.cornell.edu domain that replaces artsci-as. Without this, College
@@ -41,6 +44,7 @@ class PersonTypeRoutingService {
     'Other Faculty',
     'Department Staff',
     'Graduate Student',
+    'Emeritus',
   ];
 
   /**
