@@ -11,7 +11,6 @@ namespace Drupal\as_webhook_update\Service;
  * Routing rules:
  * - Faculty: AS + MediaReport + Dept
  * - College Staff: AS + MediaReport + Dept
- * - Advisory Council: AS + MediaReport + Dept
  * - Other Faculty (with as_directory=true): AS + MediaReport + Dept
  * - Other Faculty (with as_directory=false): Dept only
  * - Department Staff: Dept only
@@ -22,8 +21,10 @@ namespace Drupal\as_webhook_update\Service;
  *
  * Everyone sent to AS is also sent to Dept, because artsci-departments hosts
  * the as.cornell.edu domain that replaces artsci-as. Without this, College
- * Staff and Advisory Council never reached it, and its migrated pages could
- * not link to them.
+ * Staff never reached it, and its migrated pages could not link to them.
+ *
+ * Advisory Council was removed as a person type on 2026-10-16: its records
+ * were deleted everywhere and are no longer published on any site.
  */
 class PersonTypeRoutingService {
 
@@ -33,7 +34,6 @@ class PersonTypeRoutingService {
   const AS_PERSON_TYPES = [
     'Faculty',
     'College Staff',
-    'Advisory Council',
   ];
 
   /**
@@ -53,7 +53,6 @@ class PersonTypeRoutingService {
   const MEDIAREPORT_PERSON_TYPES = [
     'Faculty',
     'College Staff',
-    'Advisory Council',
   ];
 
   /**

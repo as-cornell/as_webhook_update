@@ -23,10 +23,9 @@ use Drupal\Core\Entity\EntityInterface;
  *    cross-appointed faculty: someone whose college is Human Ecology or Law but
  *    who sits in Psychology or the Institute for Comparative Modernities is
  *    exactly who the A&S directory exists to show.
- * 3. Their person type is a college-level A&S role. College Staff and Advisory
- *    Council members work for the college itself, so they have no department
- *    and the HR feed never gives them a college value, but they are A&S by
- *    definition.
+ * 3. Their person type is a college-level A&S role. College Staff work for
+ *    the college itself, so they have no department and the HR feed never
+ *    gives them a college value, but they are A&S by definition.
  *
  * The college fields are only ever populated by the HR feed, which covers
  * academic appointments alone. Graduate students, department staff, college
@@ -48,7 +47,6 @@ class CollegeAffiliationService {
    */
   const COLLEGE_LEVEL_PERSON_TYPES = [
     'College Staff',
-    'Advisory Council',
   ];
 
   /**
@@ -175,7 +173,7 @@ class CollegeAffiliationService {
    *   The person node.
    *
    * @return bool
-   *   TRUE if the person type is College Staff or Advisory Council.
+   *   TRUE if the person type is College Staff.
    */
   protected function hasCollegeLevelRole(EntityInterface $entity): bool {
     if (!$entity->hasField('field_person_type')) {
