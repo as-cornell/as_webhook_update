@@ -17,9 +17,12 @@ use Drupal\Core\Entity\EntityInterface;
  * A person qualifies on any one of three signals, checked in cost order:
  *
  * 1. `CAS` appears as the unit code of their primary or affiliated college.
- * 2. They hold any department or program reference. The
- *    `departments_and_programs` vocabulary contains only A&S units, so any term
- *    in it is by itself proof of an A&S home. This is what keeps the
+ * 2. They hold a department or program from the A&S departments vocabulary
+ *    (`departments_and_programs` on artsci-people), which contains only A&S
+ *    units, so any term in it is by itself proof of an A&S home. Only that
+ *    vocabulary counts: primary department can also hold a unit outside A&S
+ *    (from the Cornell directory), which is no evidence of an A&S home.
+ *    This is what keeps the
  *    cross-appointed faculty: someone whose college is Human Ecology or Law but
  *    who sits in Psychology or the Institute for Comparative Modernities is
  *    exactly who the A&S directory exists to show.
@@ -55,6 +58,16 @@ class CollegeAffiliationService {
   const COLLEGE_FIELDS = [
     'field_primary_college',
     'field_affiliated_colleges',
+  ];
+
+  /**
+   * Vocabularies of A&S departments and programs, by site: artsci-people
+   * names it departments_and_programs, the A&S and department sites
+   * departments_programs.
+   */
+  const AS_DEPARTMENT_VOCABULARIES = [
+    'departments_and_programs',
+    'departments_programs',
   ];
 
   /**
@@ -142,24 +155,27 @@ class CollegeAffiliationService {
   }
 
   /**
-   * Checks for any department or program reference.
+   * Checks for an A&S department or program reference.
    *
    * Resolved through referencedEntities() rather than isEmpty(), so a reference
-   * left dangling by a deleted term does not count as evidence of affiliation.
+   * left dangling by a deleted term does not count as evidence of affiliation,
+   * and only terms in the A&S vocabulary count.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The person node.
    *
    * @return bool
-   *   TRUE if the person holds at least one department or program term.
+   *   TRUE if the person holds at least one A&S department or program term.
    */
   protected function hasDepartment(EntityInterface $entity): bool {
     foreach (self::DEPARTMENT_FIELDS as $field) {
       if (!$entity->hasField($field)) {
         continue;
       }
-      if (!empty($entity->get($field)->referencedEntities())) {
-        return TRUE;
+      foreach ($entity->get($field)->referencedEntities() as $term) {
+        if (in_array($term->bundle(), self::AS_DEPARTMENT_VOCABULARIES, TRUE)) {
+          return TRUE;
+        }
       }
     }
 
