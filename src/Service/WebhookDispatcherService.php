@@ -6,6 +6,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Logger\LoggerChannelInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\as_webhook_update\Factory\EntityExtractorFactory;
+use Drupal\as_webhook_update\PersonTypeKey;
 
 /**
  * Main webhook dispatcher service.
@@ -296,9 +297,11 @@ class WebhookDispatcherService {
       return;
     }
 
-    // Decode to get person type and as_directory flag.
+    // Decode to get the person type key and as_directory flag. The key is
+    // in every payload from this release on; deriving it from the label
+    // covers anything queued before it.
     $decoded = json_decode($data);
-    $person_type = $decoded->field_person_type ?? '';
+    $person_type = $decoded->field_person_type_key ?? PersonTypeKey::fromLabel($decoded->field_person_type ?? '') ?? '';
     $as_directory = $decoded->field_as_directory ?? FALSE;
 
     // Determine destinations based on person type routing.

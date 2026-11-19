@@ -2,6 +2,7 @@
 
 namespace Drupal\as_webhook_update\DataExtractor;
 
+use Drupal\as_webhook_update\PersonTypeKey;
 use Drupal\Core\Entity\EntityInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -70,6 +71,8 @@ class MediaReportPersonDataExtractor implements EntityDataExtractorInterface {
       'netid' => $entity->field_person_netid->value,
       'field_person_last_name' => $entity->field_person_last_name->value,
       'field_person_type' => $entity->get('field_person_type')->entity?->label(),
+      // Routing and receivers match the key; the label is for display.
+      'field_person_type_key' => PersonTypeKey::fromPerson($entity),
       'field_departments_programs' => array_map(fn($term) => $term->label(), $entity->get('field_departments_programs')->referencedEntities()),
       'field_primary_department' => $entity->get('field_primary_department')->entity?->label(),
       'field_link' => 'https://' . $host . '/node/' . $entity->nid->value,

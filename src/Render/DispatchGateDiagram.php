@@ -4,6 +4,7 @@ namespace Drupal\as_webhook_update\Render;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\as_webhook_update\PersonTypeKey;
 use Drupal\as_webhook_update\Service\CollegeAffiliationService;
 use Drupal\as_webhook_update\Service\PersonTypeRoutingService;
 use Drupal\as_webhook_update\Service\WebhookDispatcherService;
@@ -37,9 +38,13 @@ class DispatchGateDiagram {
       '#stages' => $this->stages(),
       '#routing' => $this->routing(),
       '#attached' => ['library' => ['as_webhook_update/gate_diagram']],
-      // The rules are compiled into the code, so the only thing that can change
-      // this markup is a deploy.
-      '#cache' => ['max-age' => Cache::PERMANENT],
+      // The rules are compiled into the code, so only a deploy changes them.
+      // The type names come from the person type terms, so renaming one
+      // clears this too.
+      '#cache' => [
+        'max-age' => Cache::PERMANENT,
+        'tags' => array_map(fn($vid) => "taxonomy_term_list:$vid", $this->typeVocabularies()),
+      ],
     ];
   }
 
@@ -52,7 +57,7 @@ class DispatchGateDiagram {
   protected function stages(): array {
     $college_fields = implode(', ', CollegeAffiliationService::COLLEGE_FIELDS);
     $department_fields = implode(', ', CollegeAffiliationService::DEPARTMENT_FIELDS);
-    $roles = CollegeAffiliationService::COLLEGE_LEVEL_PERSON_TYPES;
+    $roles = array_map([$this, 'typeLabel'], CollegeAffiliationService::COLLEGE_LEVEL_PERSON_TYPES);
 
     return [
       [
@@ -148,11 +153,11 @@ class DispatchGateDiagram {
       foreach ($variants as $as_directory) {
         $reached = $routing->getDestinations($type, $as_directory);
 
-        $label = $type;
+        $label = $this->typeLabel($type);
         if (count($variants) > 1) {
           $label = $as_directory
-            ? $this->t('@type, in the A&S directory', ['@type' => $type])
-            : $this->t('@type, not in the A&S directory', ['@type' => $type]);
+            ? $this->t('@type, in the A&S directory', ['@type' => $this->typeLabel($type)])
+            : $this->t('@type, not in the A&S directory', ['@type' => $this->typeLabel($type)]);
         }
 
         $cells = [];
@@ -171,6 +176,41 @@ class DispatchGateDiagram {
       'headers' => array_values($destinations),
       'rows' => $rows,
     ];
+  }
+
+  /**
+   * Gets the current name of the person type with a key.
+   *
+   * @param string $key
+   *   The person type key, such as other_faculty.
+   *
+   * @return string
+   *   The term's name, or the key when no term has it.
+   */
+  protected function typeLabel(string $key): string {
+    static $labels;
+    if ($labels === NULL) {
+      $labels = [];
+      $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['vid' => $this->typeVocabularies()]);
+      foreach ($terms as $term) {
+        $labels[PersonTypeKey::fromTerm($term)] = $term->label();
+      }
+    }
+    return $labels[$key] ?? $key;
+  }
+
+  /**
+   * Gets the vocabularies person types come from.
+   *
+   * Read from field_person_type rather than named, because the people site
+   * calls its vocabulary people_categories where other sites say person_type.
+   *
+   * @return string[]
+   *   Vocabulary IDs.
+   */
+  protected function typeVocabularies(): array {
+    $field = \Drupal::service('entity_field.manager')->getFieldDefinitions('node', 'person')['field_person_type'] ?? NULL;
+    return array_values($field?->getSetting('handler_settings')['target_bundles'] ?? []);
   }
 
 }

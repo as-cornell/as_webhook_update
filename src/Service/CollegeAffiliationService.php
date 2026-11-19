@@ -2,6 +2,7 @@
 
 namespace Drupal\as_webhook_update\Service;
 
+use Drupal\as_webhook_update\PersonTypeKey;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
@@ -49,7 +50,7 @@ class CollegeAffiliationService {
    * College-level person types that are A&S without holding a department.
    */
   const COLLEGE_LEVEL_PERSON_TYPES = [
-    'College Staff',
+    'college_staff',
   ];
 
   /**
@@ -192,11 +193,7 @@ class CollegeAffiliationService {
    *   TRUE if the person type is College Staff.
    */
   protected function hasCollegeLevelRole(EntityInterface $entity): bool {
-    if (!$entity->hasField('field_person_type')) {
-      return FALSE;
-    }
-
-    $person_type = $entity->get('field_person_type')->entity?->label();
+    $person_type = PersonTypeKey::fromPerson($entity);
 
     return $person_type !== NULL
       && in_array($person_type, self::COLLEGE_LEVEL_PERSON_TYPES, TRUE);

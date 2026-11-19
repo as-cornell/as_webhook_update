@@ -129,6 +129,7 @@ as_webhook_update/
 │   │   ├── HttpClientService.php              - HTTP/cURL handling
 │   │   ├── DestinationResolverService.php     - URL resolution
 │   │   └── PersonTypeRoutingService.php       - Person routing logic
+│   ├── PersonTypeKey.php                      - Person type key (routing match)
 │   ├── DataExtractor/
 │   │   ├── EntityDataExtractorInterface.php   - Common interface
 │   │   ├── ArticleDataExtractor.php           - Article data
@@ -153,6 +154,21 @@ The module implements Drupal hooks that delegate to the dispatcher service:
 
 - **Article nodes** - Sent to articles webhook
 - **Person nodes** - Sent to AS, department, and/or media report webhooks based on person type
+
+### Person type keys
+
+Routing matches a person type by its key, never its name, so a type can be
+renamed on every site without changing where people go (as-cornell/backlog#12).
+Each site's `person_type` terms carry the key in a `field_person_type_key` text
+field: `faculty`, `other_faculty`, `emeritus`, `graduate_student`,
+`department_staff`, `college_staff`. Person payloads send it as
+`field_person_type_key` beside the display label in `field_person_type`, and
+as_webhook_entities matches it on receiving sites.
+
+Where a term has no key yet, `PersonTypeKey` derives one from the name ("Other
+Faculty" gives `other_faculty`), which is what the keys equal today. So **fill
+the keys before renaming a type**: a renamed term without a key derives a new
+key ("Tenure Stream Faculty" gives `tenure_stream_faculty`) and stops routing.
 - **Taxonomy terms** - `academic_interests`, `academic_role`, `research_areas`
 
 ## MAINTAINERS
