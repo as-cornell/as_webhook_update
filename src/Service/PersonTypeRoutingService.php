@@ -19,14 +19,16 @@ namespace Drupal\as_webhook_update\Service;
  * directory checkbox (as-cornell/backlog#5). Routing rules, by key:
  * - faculty, other_faculty, college_staff in the A&S directory:
  *   AS + MediaReport + Dept
- * - faculty, other_faculty not in the A&S directory: Dept only
- * - college_staff not in the A&S directory: Dept only. They have no
+ * - faculty, other_faculty not in the A&S directory: MediaReport + Dept
+ * - college_staff not in the A&S directory: MediaReport + Dept. They have no
  *   department, so their copy sits on artsci-departments with no department
  *   domain; it is still sent so the receiver takes it off as.cornell.edu
  *   rather than leaving a stale copy there.
- * - department_staff, graduate_student, emeritus: Dept only. Department
- *   sites keep their emeriti; the A&S site and the media report do not list
- *   them, and the receiver keeps them off the as.cornell.edu domain.
+ * - department_staff, graduate_student, emeritus: MediaReport + Dept.
+ *   Department sites keep their emeriti; the A&S site does not list them,
+ *   and the receiver keeps them off the as.cornell.edu domain.
+ *
+ * The media report receives everyone the department sites do.
  *
  * Everyone sent to AS is also sent to Dept, because artsci-departments hosts
  * the as.cornell.edu domain that replaces artsci-as. Without this, College
@@ -56,15 +58,6 @@ class PersonTypeRoutingService {
     'department_staff',
     'graduate_student',
     'emeritus',
-  ];
-
-  /**
-   * Person types that can reach the media report, when in the A&S directory.
-   */
-  const MEDIAREPORT_PERSON_TYPES = [
-    'faculty',
-    'other_faculty',
-    'college_staff',
   ];
 
   /**
@@ -103,10 +96,11 @@ class PersonTypeRoutingService {
   /**
    * Determines if a person should be sent to media report webhook.
    *
-   * The team decided on 18 November 2026 that the media report should receive
-   * everyone sent to artsci-departments. That waits on a check of what the
-   * media report shows (step 4 of the as-cornell/backlog#5 plan); until then
-   * it receives the A&S directory, as the A&S site does.
+   * Everyone sent to the department sites (team decision of 18 November
+   * 2026, as-cornell/backlog#5): media items mention graduate students, staff
+   * and emeriti as well as faculty, and editors tag them there. The media
+   * report hides person pages from visitors (as_mediareport_site), so a person
+   * shows there only as a name on the media items that mention them.
    *
    * @param string $person_type
    *   The person type key (e.g., 'faculty', 'college_staff').
@@ -117,7 +111,7 @@ class PersonTypeRoutingService {
    *   TRUE if should be sent to media report webhook, FALSE otherwise.
    */
   public function shouldSendToMediaReport(string $person_type, bool $in_as_directory): bool {
-    return $in_as_directory && in_array($person_type, self::MEDIAREPORT_PERSON_TYPES, TRUE);
+    return $this->shouldSendToDept($person_type, $in_as_directory);
   }
 
   /**

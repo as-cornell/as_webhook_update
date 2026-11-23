@@ -179,9 +179,9 @@ College Staff, and in every case Lifecycle (`field_person_lifecycle`) Active.
 A site with no Lifecycle field counts everyone as Active (as-cornell/backlog#5).
 
 The dispatcher sends the answer as `in_as_directory` in every person payload
-and routes on it: in the directory goes to the A&S site, the media report and
-the department sites; Tenure Stream and RTE Faculty outside it go to the
-department sites only. The receivers (as_webhook_entities) put a person on the
+and routes on it: in the directory goes to the A&S site and the department
+sites; everyone else who clears the A&S gate goes to the department sites
+only. The media report receives everyone the department sites do. The receivers (as_webhook_entities) put a person on the
 as.cornell.edu domain from `in_as_directory` alone, so the rule lives in one
 place. It replaced the Include in A&S directory checkbox, whose value is still
 sent as `field_as_directory` until the checkbox is removed.

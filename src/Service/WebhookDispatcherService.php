@@ -324,8 +324,12 @@ class WebhookDispatcherService {
         $response = $this->httpClient->post($data, $destination->getUrl());
         $responses['as'] = $response['http_code'];
       }
+    }
 
-      // Also send to media report.
+    // Send to media report, which has its own, smaller payload. Until the
+    // A&S directory rule (as-cornell/backlog#5) this rode along with the AS
+    // send; it now follows its own routing.
+    if (in_array('mediareport', $destination_types)) {
       $mediareport_destination = $this->destinationResolver->getMediaReportDestination();
       if ($mediareport_destination) {
         $mediareport_extractor = $this->extractorFactory->getMediaReportPersonExtractor();

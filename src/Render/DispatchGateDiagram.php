@@ -126,11 +126,10 @@ class DispatchGateDiagram {
     $routing = new PersonTypeRoutingService();
 
     // Every type either service knows about, in a stable order rather than
-    // whatever order the three constants happen to concatenate into.
+    // whatever order the two constants happen to concatenate into.
     $types = array_values(array_unique(array_merge(
       PersonTypeRoutingService::AS_PERSON_TYPES,
-      PersonTypeRoutingService::DEPT_PERSON_TYPES,
-      PersonTypeRoutingService::MEDIAREPORT_PERSON_TYPES
+      PersonTypeRoutingService::DEPT_PERSON_TYPES
     )));
     sort($types);
 
