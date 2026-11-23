@@ -102,6 +102,61 @@ class CollegeAffiliationService {
   }
 
   /**
+   * Person types the A&S directory lists when A&S is their college.
+   *
+   * Tenure Stream Faculty and RTE Faculty, by key (as-cornell/backlog#12).
+   */
+  const DIRECTORY_FACULTY_TYPES = [
+    'faculty',
+    'other_faculty',
+  ];
+
+  /**
+   * The Lifecycle value that keeps a person in the A&S directory.
+   */
+  const ACTIVE_LIFECYCLE = 'active';
+
+  /**
+   * Decides whether a person belongs in the A&S directory.
+   *
+   * The A&S directory rule (team decisions of 16, 18 and 19 November 2026,
+   * as-cornell/backlog#5). A person belongs on as.cornell.edu, and so in the
+   * A&S directory and on its related-people cards, when:
+   * - they are Tenure Stream or RTE Faculty and A&S is their primary or an
+   *   affiliated college, or they are College Staff; and
+   * - their Lifecycle is Active.
+   *
+   * The rule lives here, on the sending side only: the dispatcher sends the
+   * answer as in_as_directory, and the receivers act on it without knowing
+   * the rule. It replaces the Include in A&S directory checkbox. Anyone else
+   * who clears isArtsAndSciences() still reaches the department sites.
+   *
+   * A site whose person bundle has no Lifecycle field counts everyone as
+   * Active.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The person node.
+   *
+   * @return bool
+   *   TRUE if the person belongs in the A&S directory.
+   */
+  public function isInAsDirectory(EntityInterface $entity): bool {
+    if ($entity->hasField('field_person_lifecycle')) {
+      $lifecycle = $entity->get('field_person_lifecycle')->value;
+      if ($lifecycle !== NULL && $lifecycle !== self::ACTIVE_LIFECYCLE) {
+        return FALSE;
+      }
+    }
+
+    $type = PersonTypeKey::fromPerson($entity);
+    if (in_array($type, self::COLLEGE_LEVEL_PERSON_TYPES, TRUE)) {
+      return TRUE;
+    }
+    return in_array($type, self::DIRECTORY_FACULTY_TYPES, TRUE)
+      && $this->hasCasCollege($entity);
+  }
+
+  /**
    * Checks whether any field the gate reads exists on the entity.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity

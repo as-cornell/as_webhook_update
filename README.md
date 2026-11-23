@@ -169,6 +169,26 @@ Where a term has no key yet, `PersonTypeKey` derives one from the name ("Other
 Faculty" gives `other_faculty`), which is what the keys equal today. So **fill
 the keys before renaming a type**: a renamed term without a key derives a new
 key ("Tenure Stream Faculty" gives `tenure_stream_faculty`) and stops routing.
+
+### The A&S directory rule
+
+`CollegeAffiliationService::isInAsDirectory()` decides whether a person is in
+the A&S directory: Tenure Stream or RTE Faculty (`faculty`, `other_faculty`)
+with A&S (unit code `CAS`) as their primary or an affiliated college, or
+College Staff, and in every case Lifecycle (`field_person_lifecycle`) Active.
+A site with no Lifecycle field counts everyone as Active (as-cornell/backlog#5).
+
+The dispatcher sends the answer as `in_as_directory` in every person payload
+and routes on it: in the directory goes to the A&S site, the media report and
+the department sites; Tenure Stream and RTE Faculty outside it go to the
+department sites only. The receivers (as_webhook_entities) put a person on the
+as.cornell.edu domain from `in_as_directory` alone, so the rule lives in one
+place. It replaced the Include in A&S directory checkbox, whose value is still
+sent as `field_as_directory` until the checkbox is removed.
+
+A Temporarily hidden person is outside the directory too, and their record is
+unpublished on the people site, so every copy is unpublished as well.
+
 - **Taxonomy terms** - `academic_interests`, `academic_role`, `research_areas`
 
 ## MAINTAINERS

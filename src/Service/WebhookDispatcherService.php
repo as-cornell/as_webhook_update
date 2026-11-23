@@ -297,15 +297,23 @@ class WebhookDispatcherService {
       return;
     }
 
-    // Decode to get the person type key and as_directory flag. The key is
-    // in every payload from this release on; deriving it from the label
-    // covers anything queued before it.
+    // Decode to get the person type key. The key is in every payload from
+    // this release on; deriving it from the label covers anything queued
+    // before it.
     $decoded = json_decode($data);
     $person_type = $decoded->field_person_type_key ?? PersonTypeKey::fromLabel($decoded->field_person_type ?? '') ?? '';
-    $as_directory = $decoded->field_as_directory ?? FALSE;
+
+    // The A&S directory rule is decided here, from the record itself, and
+    // sent with the payload, so the receivers put the person on (or take them
+    // off) as.cornell.edu without knowing the rule (as-cornell/backlog#5).
+    // The guardrail queue stores only the nid and re-extracts on send, so no
+    // payload built before this release is ever routed without it.
+    $in_as_directory = $this->collegeAffiliation->isInAsDirectory($entity);
+    $decoded->in_as_directory = $in_as_directory;
+    $data = json_encode($decoded, JSON_UNESCAPED_SLASHES);
 
     // Determine destinations based on person type routing.
-    $destination_types = $this->personTypeRouting->getDestinations($person_type, $as_directory);
+    $destination_types = $this->personTypeRouting->getDestinations($person_type, $in_as_directory);
 
     $responses = [];
 

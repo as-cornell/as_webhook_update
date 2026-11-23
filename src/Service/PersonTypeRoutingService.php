@@ -6,22 +6,27 @@ namespace Drupal\as_webhook_update\Service;
  * Service for determining person webhook routing based on person type.
  *
  * Encapsulates the business logic for which webhook destinations should
- * receive person data based on the person's type and as_directory flag.
+ * receive person data, from the person's type and whether they are in the
+ * A&S directory.
  *
  * Types are matched by their key (\Drupal\as_webhook_update\PersonTypeKey),
  * never their label, so a type can be renamed on every site without changing
  * routing (as-cornell/backlog#12).
  *
- * Routing rules, by key:
- * - faculty: AS + MediaReport + Dept
- * - college_staff: AS + MediaReport + Dept
- * - other_faculty (with as_directory=true): AS + MediaReport + Dept
- * - other_faculty (with as_directory=false): Dept only
- * - department_staff: Dept only
- * - graduate_student: Dept only
- * - emeritus: Dept only. Department sites keep their emeriti; the A&S site
- *   and the media report do not list them, and the receiver keeps them off
- *   the as.cornell.edu domain.
+ * "In the A&S directory" is CollegeAffiliationService::isInAsDirectory(): Tenure
+ * Stream or RTE Faculty with A&S as their primary or an affiliated college, or
+ * College Staff, and Lifecycle Active. It replaced the Include in A&S
+ * directory checkbox (as-cornell/backlog#5). Routing rules, by key:
+ * - faculty, other_faculty, college_staff in the A&S directory:
+ *   AS + MediaReport + Dept
+ * - faculty, other_faculty not in the A&S directory: Dept only
+ * - college_staff not in the A&S directory: Dept only. They have no
+ *   department, so their copy sits on artsci-departments with no department
+ *   domain; it is still sent so the receiver takes it off as.cornell.edu
+ *   rather than leaving a stale copy there.
+ * - department_staff, graduate_student, emeritus: Dept only. Department
+ *   sites keep their emeriti; the A&S site and the media report do not list
+ *   them, and the receiver keeps them off the as.cornell.edu domain.
  *
  * Everyone sent to AS is also sent to Dept, because artsci-departments hosts
  * the as.cornell.edu domain that replaces artsci-as. Without this, College
@@ -33,10 +38,11 @@ namespace Drupal\as_webhook_update\Service;
 class PersonTypeRoutingService {
 
   /**
-   * Person types that should be sent to AS webhook.
+   * Person types that can be in the A&S directory, and so sent to AS.
    */
   const AS_PERSON_TYPES = [
     'faculty',
+    'other_faculty',
     'college_staff',
   ];
 
@@ -46,47 +52,34 @@ class PersonTypeRoutingService {
   const DEPT_PERSON_TYPES = [
     'faculty',
     'other_faculty',
+    'college_staff',
     'department_staff',
     'graduate_student',
     'emeritus',
   ];
 
   /**
-   * Person types that should be sent to media report webhook.
+   * Person types that can reach the media report, when in the A&S directory.
    */
   const MEDIAREPORT_PERSON_TYPES = [
     'faculty',
+    'other_faculty',
     'college_staff',
   ];
-
-  /**
-   * The type whose routing depends on the A&S directory flag.
-   */
-  const DIRECTORY_FLAG_TYPE = 'other_faculty';
 
   /**
    * Determines if a person should be sent to AS webhook.
    *
    * @param string $person_type
    *   The person type key (e.g., 'faculty', 'college_staff').
-   * @param bool $as_directory
-   *   Whether the person has as_directory flag set.
+   * @param bool $in_as_directory
+   *   Whether the person is in the A&S directory.
    *
    * @return bool
    *   TRUE if should be sent to AS webhook, FALSE otherwise.
    */
-  public function shouldSendToAs(string $person_type, bool $as_directory): bool {
-    // Regular AS person types.
-    if (in_array($person_type, self::AS_PERSON_TYPES, TRUE)) {
-      return TRUE;
-    }
-
-    // Other Faculty with as_directory=true.
-    if ($person_type === self::DIRECTORY_FLAG_TYPE && $as_directory === TRUE) {
-      return TRUE;
-    }
-
-    return FALSE;
+  public function shouldSendToAs(string $person_type, bool $in_as_directory): bool {
+    return $in_as_directory && in_array($person_type, self::AS_PERSON_TYPES, TRUE);
   }
 
   /**
@@ -94,67 +87,62 @@ class PersonTypeRoutingService {
    *
    * @param string $person_type
    *   The person type key (e.g., 'faculty', 'department_staff').
-   * @param bool $as_directory
-   *   Whether the person has as_directory flag set.
+   * @param bool $in_as_directory
+   *   Whether the person is in the A&S directory.
    *
    * @return bool
    *   TRUE if should be sent to department webhook, FALSE otherwise.
    */
-  public function shouldSendToDept(string $person_type, bool $as_directory): bool {
+  public function shouldSendToDept(string $person_type, bool $in_as_directory): bool {
     // The departments site also hosts as.cornell.edu, so it needs every
     // person the A&S site gets as well as its own department types.
     return in_array($person_type, self::DEPT_PERSON_TYPES, TRUE)
-      || $this->shouldSendToAs($person_type, $as_directory);
+      || $this->shouldSendToAs($person_type, $in_as_directory);
   }
 
   /**
    * Determines if a person should be sent to media report webhook.
    *
+   * The team decided on 18 November 2026 that the media report should receive
+   * everyone sent to artsci-departments. That waits on a check of what the
+   * media report shows (step 4 of the as-cornell/backlog#5 plan); until then
+   * it receives the A&S directory, as the A&S site does.
+   *
    * @param string $person_type
    *   The person type key (e.g., 'faculty', 'college_staff').
-   * @param bool $as_directory
-   *   Whether the person has as_directory flag set.
+   * @param bool $in_as_directory
+   *   Whether the person is in the A&S directory.
    *
    * @return bool
    *   TRUE if should be sent to media report webhook, FALSE otherwise.
    */
-  public function shouldSendToMediaReport(string $person_type, bool $as_directory): bool {
-    // Regular media report person types.
-    if (in_array($person_type, self::MEDIAREPORT_PERSON_TYPES, TRUE)) {
-      return TRUE;
-    }
-
-    // Other Faculty with as_directory=true.
-    if ($person_type === self::DIRECTORY_FLAG_TYPE && $as_directory === TRUE) {
-      return TRUE;
-    }
-
-    return FALSE;
+  public function shouldSendToMediaReport(string $person_type, bool $in_as_directory): bool {
+    return $in_as_directory && in_array($person_type, self::MEDIAREPORT_PERSON_TYPES, TRUE);
   }
 
   /**
-   * Gets all destinations for a person based on type and flags.
+   * Gets all destinations for a person based on type and the directory rule.
    *
    * @param string $person_type
    *   The person type key.
-   * @param bool $as_directory
-   *   Whether the person has as_directory flag set.
+   * @param bool $in_as_directory
+   *   Whether the person is in the A&S directory.
    *
    * @return array
    *   Array of destination types: ['as_people', 'dept_people', 'mediareport'].
    */
-  public function getDestinations(string $person_type, bool $as_directory): array {
+  public function getDestinations(string $person_type, bool $in_as_directory): array {
     $destinations = [];
 
-    if ($this->shouldSendToAs($person_type, $as_directory)) {
+    if ($this->shouldSendToAs($person_type, $in_as_directory)) {
       $destinations[] = 'as_people';
     }
 
-    if ($this->shouldSendToDept($person_type, $as_directory)) {
+    if ($this->shouldSendToDept($person_type, $in_as_directory)) {
       $destinations[] = 'dept_people';
     }
 
-    if ($this->shouldSendToMediaReport($person_type, $as_directory)) {
+    if ($this->shouldSendToMediaReport($person_type, $in_as_directory)) {
       $destinations[] = 'mediareport';
     }
 

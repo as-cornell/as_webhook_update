@@ -142,9 +142,10 @@ class DispatchGateDiagram {
 
     $rows = [];
     foreach ($types as $type) {
-      // Only 'Other Faculty' reads the A&S directory flag, so only it needs the
-      // two rows; showing both for every type would imply a distinction that
-      // the routing service does not make.
+      // Only the types that can be in the A&S directory (Tenure Stream and
+      // RTE Faculty, College Staff) route differently in and out of it, so
+      // only they get two rows; showing both for every type would imply a
+      // distinction that the routing service does not make.
       $variants = [FALSE];
       if ($routing->getDestinations($type, TRUE) !== $routing->getDestinations($type, FALSE)) {
         $variants = [TRUE, FALSE];
