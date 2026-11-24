@@ -183,8 +183,9 @@ and routes on it: in the directory goes to the A&S site and the department
 sites; everyone else who clears the A&S gate goes to the department sites
 only. The media report receives everyone the department sites do. The receivers (as_webhook_entities) put a person on the
 as.cornell.edu domain from `in_as_directory` alone, so the rule lives in one
-place. It replaced the Include in A&S directory checkbox, whose value is still
-sent as `field_as_directory` until the checkbox is removed.
+place. It replaced the Include in A&S directory checkbox; that field and the
+Exclude from directory checkbox are no longer sent and have been removed from
+every site.
 
 A Temporarily hidden person is outside the directory too, and their record is
 unpublished on the people site, so every copy is unpublished as well.

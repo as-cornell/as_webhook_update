@@ -261,9 +261,7 @@ class PersonDataExtractor implements EntityDataExtractorInterface {
       'field_keywords' => ['format' => $entity->field_keywords->format, 'value' => $keywords],
       'field_overview_research' => $overviewresearch,
       'field_body' => ['format' => $final_body_format, 'value' => $body],
-      'field_as_directory' => $entity->field_as_directory->value,
       'field_hide_contact_info' => $entity->field_hide_contact_info->value,
-      'field_exclude_directory' => $entity->field_exclude_directory->value,
       'field_primary_college' => $entity->get('field_primary_college')->entity?->label(),
       'field_affiliated_colleges' => array_map(fn($term) => $term->label(), $entity->get('field_affiliated_colleges')->referencedEntities()),
     ];
