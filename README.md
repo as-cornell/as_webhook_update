@@ -161,7 +161,7 @@ Routing matches a person type by its key, never its name, so a type can be
 renamed on every site without changing where people go (as-cornell/backlog#12).
 Each site's `person_type` terms carry the key in a `field_person_type_key` text
 field: `faculty`, `other_faculty`, `emeritus`, `graduate_student`,
-`department_staff`, `college_staff`. Person payloads send it as
+`department_staff`, `college_staff`, `post_doctoral`. Person payloads send it as
 `field_person_type_key` beside the display label in `field_person_type`, and
 as_webhook_entities matches it on receiving sites.
 
@@ -176,6 +176,8 @@ key ("Tenure Stream Faculty" gives `tenure_stream_faculty`) and stops routing.
 the A&S directory: Tenure Stream or RTE Faculty (`faculty`, `other_faculty`)
 with A&S (unit code `CAS`) as their primary or an affiliated college, or
 College Staff, and in every case Lifecycle (`field_person_lifecycle`) Active.
+Post Doctoral (`post_doctoral`) goes to the department sites and the media report
+only, never the A&S directory (as-cornell/artsci-people#13).
 A site with no Lifecycle field counts everyone as Active (as-cornell/backlog#5).
 
 The dispatcher sends the answer as `in_as_directory` in every person payload

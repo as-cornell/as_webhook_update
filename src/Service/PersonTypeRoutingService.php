@@ -58,6 +58,9 @@ class PersonTypeRoutingService {
     'department_staff',
     'graduate_student',
     'emeritus',
+    // Department sites and the media report only, never the A&S directory
+    // (as-cornell/artsci-people#13, 24 November 2026).
+    'post_doctoral',
   ];
 
   /**
